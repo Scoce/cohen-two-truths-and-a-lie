@@ -224,31 +224,47 @@ const ADULT_MOCK_QUESTIONS: Record<string, GameQuestion[]> = {
   ]
 };
 
-export async function generateTwoTruthsAndALie(category: string, age: number = 10): Promise<GameQuestion> {
+export async function generateTwoTruthsAndALie(
+  category: string, 
+  age: number = 10,
+  excludePersonas: string[] = []
+): Promise<GameQuestion> {
   const normCategory = category.toLowerCase().trim();
   const mockDatabase = age < 12 ? KIDS_MOCK_QUESTIONS : ADULT_MOCK_QUESTIONS;
   const categoryKey = mockDatabase[normCategory] ? normCategory : 'sports';
   
   if (!aiClient) {
     const questions = mockDatabase[categoryKey];
-    const randomIndex = Math.floor(Math.random() * questions.length);
-    return questions[randomIndex];
+    // Filter questions to exclude recently played personas
+    let filteredQuestions = questions.filter(
+      q => !excludePersonas.some(ep => ep.toLowerCase().trim() === q.persona.toLowerCase().trim())
+    );
+    // If all are filtered (e.g. mock list is exhausted), fall back to original set
+    if (filteredQuestions.length === 0) {
+      filteredQuestions = questions;
+    }
+    const randomIndex = Math.floor(Math.random() * filteredQuestions.length);
+    return filteredQuestions[randomIndex];
   }
 
   try {
     // Customize guidelines based on age groups
     let ageGuidelines = '';
-    if (age < 10) {
-      ageGuidelines = `Target Audience: Children aged ${age}. Use simple, exciting, and easy-to-read language. Choose extremely famous figures or fictional characters (like Elsa, Mario, Harry Potter, Spider-Man, Messi, Taylor Swift) that a child of age ${age} would know. Make the lie silly and simple. Avoid complex historical context or vocabulary.`;
-    } else if (age < 15) {
-      ageGuidelines = `Target Audience: Pre-teens and young teens aged ${age}. Choose popular icons, YouTubers, gaming stars, sports champions, or basic historical/scientific figures (like Albert Einstein, Steve Jobs, Ariana Grande, LeBron James). Facts should be interesting, engaging, and readable. Make the lie tricky but clear.`;
+    if (age < 12) {
+      ageGuidelines = `Target Audience: Children (under 12). Use simple, exciting, and easy-to-read language. Choose extremely famous figures or fictional characters (like Elsa, Mario, Harry Potter, Spider-Man, Messi, Taylor Swift) that a child of this age group would know. Make the lie silly and simple. Avoid complex historical context or vocabulary.`;
+    } else if (age < 18) {
+      ageGuidelines = `Target Audience: Pre-teens and teens (12-17). Choose popular icons, YouTubers, gaming stars, sports champions, or basic historical/scientific figures (like Albert Einstein, Steve Jobs, Ariana Grande, LeBron James). Facts should be interesting, engaging, and readable. Make the lie tricky but clear.`;
     } else {
-      ageGuidelines = `Target Audience: Adults or older teens aged ${age}+. Choose famous historical figures, scientists, actors, musicians, and sports champions. Make the statements tricky, challenging, and detailed. The lie should be a plausible but factually incorrect detail.`;
+      ageGuidelines = `Target Audience: Adults (18+). Choose famous historical figures, scientists, actors, musicians, and sports champions. Make the statements tricky, challenging, and detailed. The lie should be a plausible but factually incorrect detail.`;
     }
+
+    const excludePrompt = excludePersonas.length > 0
+      ? `\nCRITICAL: Do NOT choose any of the following people or characters: ${excludePersonas.join(', ')}. You MUST choose a different person or character.`
+      : '';
 
     const prompt = `You are an expert trivia assistant. Generate a "Two Truths and a Lie" round about a famous person or fictional character in the "${normCategory}" category.
 
-${ageGuidelines}
+${ageGuidelines}${excludePrompt}
 
 Return the result as a raw JSON object with the following structure:
 {
@@ -290,7 +306,13 @@ Note: The "facts" array MUST contain exactly 3 items. The "lieIndex" MUST corres
   } catch (error) {
     console.error(`[gemini] Error calling Gemini API (age: ${age}), falling back to mock:`, error);
     const questions = mockDatabase[categoryKey];
-    const randomIndex = Math.floor(Math.random() * questions.length);
-    return questions[randomIndex];
+    let filteredQuestions = questions.filter(
+      q => !excludePersonas.some(ep => ep.toLowerCase().trim() === q.persona.toLowerCase().trim())
+    );
+    if (filteredQuestions.length === 0) {
+      filteredQuestions = questions;
+    }
+    const randomIndex = Math.floor(Math.random() * filteredQuestions.length);
+    return filteredQuestions[randomIndex];
   }
 }

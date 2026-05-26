@@ -10,7 +10,7 @@ export default function Home() {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [age, setAge] = useState('10');
+  const [age, setAge] = useState('8');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -111,7 +111,7 @@ export default function Home() {
                 setIsLogin(true);
                 setError('');
                 setSuccess('');
-                setAge('10');
+                setAge('8');
               }}
               disabled={loading}
             >
@@ -124,7 +124,7 @@ export default function Home() {
                 setIsLogin(false);
                 setError('');
                 setSuccess('');
-                setAge('10');
+                setAge('8');
               }}
               disabled={loading}
             >
@@ -173,20 +173,20 @@ export default function Home() {
             {!isLogin && (
               <div className={styles.formGroup}>
                 <label htmlFor="age" className={styles.label}>
-                  Your Age (to show matching questions)
+                  Who is playing?
                 </label>
-                <input
+                <select
                   id="age"
-                  type="number"
-                  min="1"
-                  max="120"
                   className={styles.input}
-                  placeholder="Enter your age"
                   value={age}
                   onChange={(e) => setAge(e.target.value)}
                   disabled={loading}
                   required
-                />
+                >
+                  <option value="8">Children (Under 12)</option>
+                  <option value="14">Teens (12-17)</option>
+                  <option value="25">Adults (18+)</option>
+                </select>
               </div>
             )}
 

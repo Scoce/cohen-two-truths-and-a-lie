@@ -25,7 +25,16 @@ export async function POST(req: Request) {
     const userRes = await query('SELECT age FROM users WHERE id = $1', [sessionUser.userId]);
     const age = userRes.rows.length > 0 ? userRes.rows[0].age : 10;
 
-    const { persona, facts: originalFacts, lieIndex: originalLieIndex } = await generateTwoTruthsAndALie(category, age);
+    // Fetch the user's recently played personas in this category to prevent repeats
+    const recentRes = await query(
+      `SELECT DISTINCT persona FROM games 
+       WHERE user_id = $1 AND category = $2 AND guessed_index IS NOT NULL 
+       ORDER BY id DESC LIMIT 3`,
+      [sessionUser.userId, category]
+    );
+    const excludePersonas = recentRes.rows.map((row) => row.persona);
+
+    const { persona, facts: originalFacts, lieIndex: originalLieIndex } = await generateTwoTruthsAndALie(category, age, excludePersonas);
 
     // 4. Shuffle facts and track where the lie ends up
     const items = originalFacts.map((fact, index) => ({

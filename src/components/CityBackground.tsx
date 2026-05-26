@@ -12,7 +12,8 @@ export default function CityBackground({ children }: CityBackgroundProps) {
       width: '100%',
       display: 'flex',
       flexDirection: 'column',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      backgroundColor: '#09090e' // Ensure a base background color is set on wrapper
     }}>
       {/* Background Image Layer */}
       <div 
@@ -26,9 +27,9 @@ export default function CityBackground({ children }: CityBackgroundProps) {
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
-          filter: 'brightness(0.3) blur(6px) contrast(1.1)',
+          filter: 'brightness(0.38) blur(6px) contrast(1.1)',
           transform: 'scale(1.05)', // Prevent white edges due to blur
-          zIndex: -1
+          zIndex: 1 // Positive stacking context
         }} 
         aria-hidden="true"
       />
@@ -42,7 +43,7 @@ export default function CityBackground({ children }: CityBackgroundProps) {
           width: '100vw',
           height: '100vh',
           background: 'radial-gradient(circle at 50% 50%, rgba(9, 9, 14, 0.1) 0%, rgba(9, 9, 14, 0.7) 100%)',
-          zIndex: -1
+          zIndex: 2 // Positioned in front of the image
         }} 
         aria-hidden="true"
       />
@@ -50,7 +51,7 @@ export default function CityBackground({ children }: CityBackgroundProps) {
       {/* Content Layer */}
       <div style={{
         position: 'relative',
-        zIndex: 1,
+        zIndex: 10, // Positioned on top of both background layers
         width: '100%',
         minHeight: '100vh',
         display: 'flex',

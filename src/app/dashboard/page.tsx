@@ -106,6 +106,13 @@ export default function Dashboard() {
 
   const isKid = user ? user.age < 12 : true;
 
+  // Calculate active bucket for dropdown value
+  let activeBucket = '25';
+  if (user) {
+    if (user.age < 12) activeBucket = '8';
+    else if (user.age < 18) activeBucket = '14';
+  }
+
   const categories: Category[] = [
     {
       id: 'sports',
@@ -184,18 +191,16 @@ export default function Dashboard() {
           {user && (
             <div className={styles.userInfo}>
               <div className={styles.ageSelectorGroup}>
-                <span className={styles.ageLabel}>Age:</span>
+                <span className={styles.ageLabel}>Playing:</span>
                 <select
-                  value={user.age}
+                  value={activeBucket}
                   onChange={(e) => handleAgeChange(parseInt(e.target.value, 10))}
                   className={styles.ageSelect}
                   aria-label="Change age group"
                 >
-                  {Array.from({ length: 93 }, (_, i) => i + 8).map((a) => (
-                    <option key={a} value={a}>
-                      {a === 100 ? '100+' : a}
-                    </option>
-                  ))}
+                  <option value="8">Children (Under 12)</option>
+                  <option value="14">Teens (12-17)</option>
+                  <option value="25">Adults (18+)</option>
                 </select>
               </div>
               <span className={styles.username}>{user.username}</span>
