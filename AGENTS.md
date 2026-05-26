@@ -19,3 +19,8 @@ As a coding agent on this project, you must adhere to the following rules at all
 3. **Lean Code Commenting**
    - Do NOT provide exhaustive comments explaining every line of source code.
    - Keep comments in the code standard, meaningful, and self-documenting to prevent file sizes from bloating, saving valuable context window space.
+
+4. **Secure Coding Best Practices**
+   - Prioritize security in all layers: write parameterized SQL queries, sanitize inputs, restrict lengths/regex formats, and block XSS/injection vectors.
+   - Enforce runtime checks for critical variables (like JWT secrets) in production, and set secure HTTP headers (such as X-Frame-Options and X-Content-Type-Options) to protect layouts.
+
