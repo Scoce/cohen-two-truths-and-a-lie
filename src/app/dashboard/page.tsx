@@ -38,6 +38,9 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [generatingCategory, setGeneratingCategory] = useState('');
+  
+  // Modal state
+  const [showLeaderboardModal, setShowLeaderboardModal] = useState(false);
 
   useEffect(() => {
     async function fetchUserAndLeaderboard() {
@@ -219,6 +222,13 @@ export default function Dashboard() {
                   <option value="25">Adults (18+)</option>
                 </select>
               </div>
+              <button 
+                onClick={() => setShowLeaderboardModal(true)} 
+                className={styles.leaderboardLink}
+                title="View Monthly Leaderboard"
+              >
+                <Trophy size={16} /> Hall of Fame
+              </button>
               <span className={styles.username}>{user.username}</span>
               <span className={styles.scoreBadge}>{user.score} pts</span>
               <button 
@@ -233,84 +243,101 @@ export default function Dashboard() {
           )}
         </header>
 
-        {/* Two-Column Main Layout */}
-        <div className={styles.mainLayout}>
-          {/* Left Column: Categories Grid */}
-          <div className={styles.categoriesSection}>
-            <div className={styles.welcomeSection}>
-              <h2 className={styles.welcomeTitle}>Choose a Fun Category!</h2>
-              <p className={styles.welcomeDesc}>
-                Pick a topic below. The Gemini AI will make two truths and a lie about a famous person or cartoon character. Can you find the lie?
-              </p>
-            </div>
+        {/* Welcome Section */}
+        <div className={styles.welcomeSection}>
+          <h2 className={styles.welcomeTitle}>Choose a Fun Category!</h2>
+          <p className={styles.welcomeDesc}>
+            Pick a topic below. The Gemini AI will make two truths and a lie about a famous person or cartoon character. Can you find the lie?
+          </p>
+        </div>
 
-            <div className={styles.grid}>
-              {categories.map((cat) => (
-                <div
-                  key={cat.id}
-                  className={`${styles.categoryCard} glass-panel`}
-                  style={{
-                    // Custom properties passed down to CSS
-                    ['--card-color' as any]: cat.color,
-                    ['--card-color-glow' as any]: cat.glowColor,
-                  }}
-                  onClick={() => handleSelectCategory(cat.id, cat.name)}
-                >
-                  <div className={styles.iconWrapper}>{cat.icon}</div>
-                  <h3 className={styles.cardTitle}>{cat.name}</h3>
-                  <p className={styles.cardDescription}>{cat.description}</p>
-                  <button type="button" className={styles.playBtn} aria-label={`Play ${cat.name}`}>
-                    Play Now <ArrowRight size={16} />
-                  </button>
+        {/* Categories Grid (Takes up full width now) */}
+        <div className={styles.grid}>
+          {categories.map((cat) => (
+            <div
+              key={cat.id}
+              className={`${styles.categoryCard} glass-panel`}
+              style={{
+                // Custom properties passed down to CSS
+                ['--card-color' as any]: cat.color,
+                ['--card-color-glow' as any]: cat.glowColor,
+              }}
+              onClick={() => handleSelectCategory(cat.id, cat.name)}
+            >
+              <div className={styles.iconWrapper}>{cat.icon}</div>
+              <h3 className={styles.cardTitle}>{cat.name}</h3>
+              <p className={styles.cardDescription}>{cat.description}</p>
+              <button type="button" className={styles.playBtn} aria-label={`Play ${cat.name}`}>
+                Play Now <ArrowRight size={16} />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Monthly Leaderboard Modal */}
+      {showLeaderboardModal && (
+        <div 
+          className={styles.modalOverlay} 
+          onClick={() => setShowLeaderboardModal(false)}
+        >
+          <div 
+            className={`${styles.modalContent} glass-panel`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <div className={styles.modalHeaderTitleGroup}>
+                <Trophy size={22} color="var(--neon-cyan)" style={{ filter: 'drop-shadow(0 0 5px var(--neon-cyan-glow))' }} />
+                <div>
+                  <h3 className={styles.modalTitle}>Monthly Hall of Fame</h3>
+                  <div className={styles.modalSubtitle}>Top Players this month</div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right Column: Leaderboard Sidebar */}
-          <div className={`${styles.leaderboardSection} glass-panel`}>
-            <div className={styles.leaderboardHeader}>
-              <Trophy size={22} color="var(--neon-cyan)" style={{ filter: 'drop-shadow(0 0 5px var(--neon-cyan-glow))' }} />
-              <div>
-                <h3 className={styles.leaderboardTitle}>Monthly Hall of Fame</h3>
-                <div className={styles.leaderboardSubtitle}>Top Players this month</div>
               </div>
+              <button 
+                className={styles.closeBtn} 
+                onClick={() => setShowLeaderboardModal(false)}
+                aria-label="Close modal"
+              >
+                &times;
+              </button>
             </div>
 
-            <div className={styles.leaderboardList}>
-              {leaderboard.length > 0 ? (
-                leaderboard.map((entry, index) => {
-                  const rank = index + 1;
-                  let rankClass = styles.playerRank;
-                  if (rank === 1) rankClass += ` ${styles.playerRank1}`;
-                  else if (rank === 2) rankClass += ` ${styles.playerRank2}`;
-                  else if (rank === 3) rankClass += ` ${styles.playerRank3}`;
+            <div className={styles.modalBody}>
+              <div className={styles.leaderboardList}>
+                {leaderboard.length > 0 ? (
+                  leaderboard.map((entry, index) => {
+                    const rank = index + 1;
+                    let rankClass = styles.playerRank;
+                    if (rank === 1) rankClass += ` ${styles.playerRank1}`;
+                    else if (rank === 2) rankClass += ` ${styles.playerRank2}`;
+                    else if (rank === 3) rankClass += ` ${styles.playerRank3}`;
 
-                  const isCurrentUser = user && entry.playerName.toLowerCase() === user.username.toLowerCase();
-                  const itemClass = `${styles.leaderboardItem} ${isCurrentUser ? styles.leaderboardItemActive : ''}`;
+                    const isCurrentUser = user && entry.playerName.toLowerCase() === user.username.toLowerCase();
+                    const itemClass = `${styles.leaderboardItem} ${isCurrentUser ? styles.leaderboardItemActive : ''}`;
 
-                  return (
-                    <div key={entry.id} className={itemClass}>
-                      <div className={rankClass}>#{rank}</div>
-                      <div className={styles.playerInfo}>
-                        <div className={styles.playerNameText}>{entry.playerName}</div>
-                        <div className={styles.playerMetaText}>
-                          {entry.category} • {entry.ageGroup}
+                    return (
+                      <div key={entry.id} className={itemClass}>
+                        <div className={rankClass}>#{rank}</div>
+                        <div className={styles.playerInfo}>
+                          <div className={styles.playerNameText}>{entry.playerName}</div>
+                          <div className={styles.playerMetaText}>
+                            {entry.category} • {entry.ageGroup}
+                          </div>
                         </div>
+                        <div className={styles.playerScore}>{entry.score} pts</div>
                       </div>
-                      <div className={styles.playerScore}>{entry.score} pts</div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className={styles.emptyLeaderboard}>
-                  No entries yet this month. Be the first to claim a spot on the board!
-                </div>
-              )}
+                    );
+                  })
+                ) : (
+                  <div className={styles.emptyLeaderboard}>
+                    No entries yet this month. Be the first to claim a spot on the board!
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Generating Overlay */}
       {generating && (

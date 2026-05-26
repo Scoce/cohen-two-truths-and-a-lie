@@ -342,7 +342,7 @@ export default function GameRound() {
             <div className={styles.actionRow}>
               <button onClick={handlePlayAgain} className={styles.btnPrimary}>
                 <RefreshCw size={16} style={{ marginRight: '0.5rem', display: 'inline', verticalAlign: 'middle' }} />
-                Next Persona
+                Next Round
               </button>
               <button onClick={() => router.push('/dashboard')} className={styles.btnSecondary}>
                 <LayoutDashboard size={16} style={{ marginRight: '0.5rem', display: 'inline', verticalAlign: 'middle' }} />
