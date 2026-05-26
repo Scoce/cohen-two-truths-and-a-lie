@@ -252,13 +252,23 @@ export const query = async (text: string, params: any[] = []) => {
     return { rows: [newUser], rowCount: 1 };
   }
 
-  // UPDATE users SET score = score + 10
-  if (queryNormalized.includes('UPDATE users SET score = score + 10')) {
-    const id = params[0];
-    const user = mockUsers.find((u) => u.id === id);
-    if (user) {
-      user.score += 10;
-      return { rows: [{ score: user.score }], rowCount: 1 };
+  // UPDATE users SET score =
+  if (queryNormalized.includes('UPDATE users SET score =')) {
+    if (queryNormalized.includes('score = 0')) {
+      const id = params[0];
+      const user = mockUsers.find((u) => u.id === id);
+      if (user) {
+        user.score = 0;
+        return { rows: [{ score: 0 }], rowCount: 1 };
+      }
+    } else {
+      const points = params[0];
+      const id = params[1];
+      const user = mockUsers.find((u) => u.id === id);
+      if (user) {
+        user.score += points;
+        return { rows: [{ score: user.score }], rowCount: 1 };
+      }
     }
     return { rows: [], rowCount: 0 };
   }
@@ -282,10 +292,10 @@ export const query = async (text: string, params: any[] = []) => {
     return { rows: user ? [user] : [], rowCount: user ? 1 : 0 };
   }
 
-  // SELECT * FROM sessions WHERE user_id = $1 AND category = $2 AND completed = FALSE
+  // SELECT * FROM sessions WHERE user_id = $1 AND completed = FALSE
   if (queryNormalized.includes('FROM sessions') && queryNormalized.includes('completed = FALSE')) {
-    const [user_id, category] = params;
-    const session = mockSessions.find((s) => s.user_id === user_id && s.category === category && !s.completed);
+    const user_id = params[0];
+    const session = mockSessions.find((s) => s.user_id === user_id && !s.completed);
     return { rows: session ? [session] : [], rowCount: session ? 1 : 0 };
   }
 
@@ -305,14 +315,27 @@ export const query = async (text: string, params: any[] = []) => {
     return { rows: [newSession], rowCount: 1 };
   }
 
-  // UPDATE sessions SET question_count = $1, score = $2, completed = $3 WHERE id = $4
-  if (queryNormalized.includes('UPDATE sessions SET question_count =')) {
-    const [question_count, score, completed, id] = params;
+  // UPDATE sessions SET
+  if (queryNormalized.includes('UPDATE sessions SET')) {
+    const id = params[params.length - 1];
     const session = mockSessions.find((s) => s.id === id);
     if (session) {
-      session.question_count = question_count;
-      session.score = score;
-      session.completed = completed;
+      if (queryNormalized.includes('question_count =')) {
+        const [question_count] = params;
+        session.question_count = question_count;
+      } else if (queryNormalized.includes('score =') && queryNormalized.includes('completed =') && queryNormalized.includes('category =')) {
+        const [score, completed, category] = params;
+        session.score = score;
+        session.completed = completed;
+        session.category = category;
+      } else if (queryNormalized.includes('score =') && queryNormalized.includes('completed =')) {
+        const [score, completed] = params;
+        session.score = score;
+        session.completed = completed;
+      } else if (queryNormalized.includes('completed =')) {
+        const [completed] = params;
+        session.completed = completed;
+      }
       return { rows: [session], rowCount: 1 };
     }
     return { rows: [], rowCount: 0 };

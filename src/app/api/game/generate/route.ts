@@ -18,12 +18,12 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const category = body.category || 'sports';
 
-    // 3. Check for an active, uncompleted game session for this user in this category
+    // 3. Check for an active, uncompleted game session for this user (cross-category)
     const activeSessionRes = await query(
       `SELECT * FROM sessions 
-       WHERE user_id = $1 AND category = $2 AND completed = FALSE 
+       WHERE user_id = $1 AND completed = FALSE 
        ORDER BY id DESC LIMIT 1`,
-      [sessionUser.userId, category]
+      [sessionUser.userId]
     );
 
     let sessionId: number;

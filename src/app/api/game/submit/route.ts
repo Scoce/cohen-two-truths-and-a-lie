@@ -76,10 +76,12 @@ export async function POST(req: Request) {
         sessionScore = session.score + pointsEarned;
         sessionCompleted = sessionProgress >= 10;
 
-        // Save updated session state
+        const newCategory = session.category === game.category ? session.category : 'Mixed';
+
+        // Save updated session state including potentially updated category
         await query(
-          'UPDATE sessions SET score = $1, completed = $2 WHERE id = $3',
-          [sessionScore, sessionCompleted, game.session_id]
+          'UPDATE sessions SET score = $1, completed = $2, category = $3 WHERE id = $4',
+          [sessionScore, sessionCompleted, newCategory, game.session_id]
         );
       }
     }

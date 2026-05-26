@@ -34,6 +34,9 @@ export async function POST(req: Request) {
       );
     }
 
+    // Reset user score to 0 on successful login
+    await query('UPDATE users SET score = 0 WHERE id = $1', [user.id]);
+
     // Sign JWT
     const token = await signJWT({
       userId: user.id,
@@ -46,7 +49,7 @@ export async function POST(req: Request) {
       user: {
         id: user.id,
         username: user.username,
-        score: user.score,
+        score: 0,
       },
     });
 
