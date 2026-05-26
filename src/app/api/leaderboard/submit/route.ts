@@ -25,6 +25,15 @@ export async function POST(req: Request) {
 
     const trimmedName = playerName.trim().substring(0, 30);
 
+    // Validate player name content to reject HTML tags, scripts or malicious characters
+    const nameRegex = /^[a-zA-Z0-9\s\-_]+$/;
+    if (!nameRegex.test(trimmedName)) {
+      return NextResponse.json(
+        { error: 'Player name can only contain letters, numbers, spaces, hyphens, and underscores.' },
+        { status: 400 }
+      );
+    }
+
     // 3. Fetch the session
     const sessionRes = await query(
       'SELECT * FROM sessions WHERE id = $1 AND user_id = $2',
