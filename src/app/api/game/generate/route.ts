@@ -81,41 +81,87 @@ export async function POST(req: Request) {
     let originalFacts: string[] = [];
     let originalLieIndex = 0;
 
-    // Check if there is an unplayed question in trivia_pool for this user/category/ageGroup
-    const cachedTriviaRes = await query(
-      `SELECT * FROM trivia_pool 
-       WHERE category = $1 AND age_group = $2
-       AND persona NOT IN (
-         SELECT persona FROM games WHERE user_id = $3
-       )
-       ORDER BY RANDOM() LIMIT 1`,
-      [category, ageGroup, sessionUser.userId]
+    // Fetch all personas played by this user during the current month (new requirement)
+    const playedRes = await query(
+      `SELECT DISTINCT persona FROM games 
+       WHERE user_id = $1 
+       AND created_at >= DATE_TRUNC('month', NOW())`,
+      [sessionUser.userId]
+    );
+    const playedPersonasThisMonth = playedRes.rows.map((row) => row.persona);
+
+    // Query all questions currently in trivia_pool for this category/ageGroup
+    const poolRes = await query(
+      `SELECT * FROM trivia_pool WHERE category = $1 AND age_group = $2`,
+      [category, ageGroup]
+    );
+    const poolQuestions = poolRes.rows;
+
+    // Filter to find eligible cached questions (not played by this user this month)
+    const eligibleCached = poolQuestions.filter(
+      (q) => !playedPersonasThisMonth.some(
+        (p) => p.toLowerCase().trim() === q.persona.toLowerCase().trim()
+      )
     );
 
-    if (cachedTriviaRes.rows.length > 0) {
-      const cachedTrivia = cachedTriviaRes.rows[0];
-      console.log(`[game-generate] Cache HIT! Using cached trivia for "${cachedTrivia.persona}"`);
-      persona = cachedTrivia.persona;
-      originalFacts = [cachedTrivia.fact_1, cachedTrivia.fact_2, cachedTrivia.fact_3];
-      originalLieIndex = cachedTrivia.lie_index;
-    } else {
-      console.log(`[game-generate] Cache MISS! Generating fresh trivia using Gemini...`);
-      // 5. Query user's recently played personas in this category/session to prevent repeats
-      const recentRes = await query(
-        `SELECT persona FROM games 
-         WHERE user_id = $1 AND (session_id = $2 OR category = $3) 
-         ORDER BY id DESC LIMIT 15`,
-        [sessionUser.userId, sessionId, category]
-      );
-      const excludePersonas = Array.from(new Set(recentRes.rows.map((row) => row.persona))).slice(0, 5);
+    console.log(`[game-generate] Cache stats - Total in pool: ${poolQuestions.length}, Eligible unplayed: ${eligibleCached.length}`);
 
-      // 6. Generate truths and lies (now passing age and exclusions list)
-      const trivia = await generateTwoTruthsAndALie(category, age, excludePersonas);
+    // If buffer size (eligible cached questions) is less than 4, proactively pre-pull/generate a new one!
+    if (eligibleCached.length < 4) {
+      console.log(`[game-generate] Cache pool buffer low (${eligibleCached.length} < 4). Pre-pulling new persona...`);
+      try {
+        const poolPersonas = poolQuestions.map((q) => q.persona);
+        const allExcludedPersonas = Array.from(
+          new Set([
+            ...playedPersonasThisMonth,
+            ...poolPersonas
+          ])
+        );
+
+        const trivia = await generateTwoTruthsAndALie(category, age, allExcludedPersonas);
+        
+        console.log(`[game-generate] Pre-pulled new persona: "${trivia.persona}". Adding to trivia_pool cache for other users.`);
+        
+        // Save to cache pool
+        const insertRes = await query(
+          `INSERT INTO trivia_pool (category, age_group, persona, fact_1, fact_2, fact_3, lie_index)
+           VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+          [
+            category,
+            ageGroup,
+            trivia.persona,
+            trivia.facts[0],
+            trivia.facts[1],
+            trivia.facts[2],
+            trivia.lieIndex
+          ]
+        );
+
+        if (insertRes.rows.length > 0) {
+          eligibleCached.push(insertRes.rows[0]);
+        }
+      } catch (genErr) {
+        console.error('[game-generate] Proactive pool pre-pull failed:', genErr);
+      }
+    }
+
+    // Serve a question from our eligible list
+    if (eligibleCached.length > 0) {
+      const randomIndex = Math.floor(Math.random() * eligibleCached.length);
+      const selectedTrivia = eligibleCached[randomIndex];
+      console.log(`[game-generate] Serving trivia for "${selectedTrivia.persona}"`);
+      persona = selectedTrivia.persona;
+      originalFacts = [selectedTrivia.fact_1, selectedTrivia.fact_2, selectedTrivia.fact_3];
+      originalLieIndex = selectedTrivia.lie_index;
+    } else {
+      // Emergency fallback (this should only happen if Gemini pre-pull failed and cache was empty)
+      console.log(`[game-generate] Cache pool empty. Emergency generating...`);
+      const trivia = await generateTwoTruthsAndALie(category, age, playedPersonasThisMonth);
       persona = trivia.persona;
       originalFacts = trivia.facts;
       originalLieIndex = trivia.lieIndex;
-
-      // Save to pool for future cache hits
+      
+      // Save it to pool
       await query(
         `INSERT INTO trivia_pool (category, age_group, persona, fact_1, fact_2, fact_3, lie_index)
          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
@@ -126,7 +172,7 @@ export async function POST(req: Request) {
           originalFacts[0],
           originalFacts[1],
           originalFacts[2],
-          originalLieIndex,
+          originalLieIndex
         ]
       );
     }

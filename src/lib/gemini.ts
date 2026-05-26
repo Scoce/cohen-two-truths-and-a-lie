@@ -26,7 +26,7 @@ const KIDS_MOCK_QUESTIONS: Record<string, GameQuestion[]> = {
         "He had a growth hormone condition when he was little and Barcelona paid for his medical treatment.",
         "He plays professional basketball for the Chicago Bulls when soccer season is over."
       ],
-      lieIndex: 2 // He only plays soccer, not professional basketball!
+      lieIndex: 2
     },
     {
       persona: "LeBron James",
@@ -35,7 +35,34 @@ const KIDS_MOCK_QUESTIONS: Record<string, GameQuestion[]> = {
         "He starred in the animated movie 'Space Jam: A New Legacy' alongside Bugs Bunny.",
         "He stands at over eight feet tall, making him the tallest human in history."
       ],
-      lieIndex: 2 // He is about 6 feet 9 inches tall, not 8 feet tall!
+      lieIndex: 2
+    },
+    {
+      persona: "Serena Williams",
+      facts: [
+        "She is one of the greatest tennis players ever, winning 23 Grand Slam singles titles.",
+        "She began playing tennis at the age of four with her sister Venus Williams.",
+        "She plays tennis using a massive wooden racket that belonged to the Queen of England."
+      ],
+      lieIndex: 2
+    },
+    {
+      persona: "Simone Biles",
+      facts: [
+        "She is the most decorated gymnast in history, winning dozens of Olympic and World Championship medals.",
+        "She has a signature gymnastics move named after her called the 'Biles'.",
+        "She won all of her gymnastics gold medals while wearing heavy iron shoes."
+      ],
+      lieIndex: 2
+    },
+    {
+      persona: "Usain Bolt",
+      facts: [
+        "He is the fastest runner in history, holding the world record for the 100-meter sprint.",
+        "His nickname is 'Lightning Bolt' and he does a signature lightning pose after winning.",
+        "He won his races by riding a super-fast electric scooter instead of running."
+      ],
+      lieIndex: 2
     }
   ],
   movies: [

@@ -426,6 +426,25 @@ export const query = async (text: string, params: any[] = []) => {
     return { rows: [{ correct_count: correctCount }], rowCount: 1 };
   }
 
+  // SELECT DISTINCT persona FROM games WHERE user_id = $1 AND created_at >= DATE_TRUNC('month', NOW())
+  if (queryNormalized.includes('DISTINCT persona FROM games') && queryNormalized.includes('created_at >=')) {
+    const user_id = params[0];
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const played = mockGames
+      .filter((g) => 
+        g.user_id === user_id && 
+        g.created_at.getMonth() === currentMonth && 
+        g.created_at.getFullYear() === currentYear
+      )
+      .map((g) => g.persona);
+      
+    const uniquePlayed = Array.from(new Set(played)).map((persona) => ({ persona }));
+    return { rows: uniquePlayed, rowCount: uniquePlayed.length };
+  }
+
   // UPDATE games SET guessed_index = $1, is_correct = $2 WHERE id = $3
   if (queryNormalized.includes('UPDATE games SET guessed_index =')) {
     const [guessed_index, is_correct, id] = params;
@@ -470,6 +489,16 @@ export const query = async (text: string, params: any[] = []) => {
       .sort((a, b) => b.score - a.score || a.created_at.getTime() - b.created_at.getTime())
       .slice(0, 10);
     return { rows: filtered, rowCount: filtered.length };
+  }
+
+  // SELECT * FROM trivia_pool WHERE category = $1 AND age_group = $2
+  if (queryNormalized.includes('FROM trivia_pool WHERE category =') && !queryNormalized.includes('persona NOT IN')) {
+    const [category, age_group] = params;
+    const matched = mockTriviaPool.filter((t) => 
+      t.category.toLowerCase().trim() === category.toLowerCase().trim() &&
+      t.age_group.toLowerCase().trim() === age_group.toLowerCase().trim()
+    );
+    return { rows: matched, rowCount: matched.length };
   }
 
   // SELECT * FROM trivia_pool WHERE category = $1 AND age_group = $2 AND persona NOT IN ...
