@@ -1,65 +1,205 @@
-import Image from "next/image";
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import CityBackground from '@/components/CityBackground';
+import styles from '@/styles/auth.module.css';
 
 export default function Home() {
+  const router = useRouter();
+  const [isLogin, setIsLogin] = useState(true);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [age, setAge] = useState('10');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [authChecking, setAuthChecking] = useState(true);
+
+  // Check if user is already logged in
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          router.push('/dashboard');
+        }
+      } catch (err) {
+        console.error('Failed to verify session', err);
+      } finally {
+        setAuthChecking(false);
+      }
+    }
+    checkAuth();
+  }, [router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (!username.trim() || !password) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/signup';
+      const payload = isLogin
+        ? { username: username.trim(), password }
+        : { username: username.trim(), password, age: parseInt(age, 10) || 10 };
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Something went wrong');
+      } else {
+        if (isLogin) {
+          setSuccess('Login successful! Redirecting...');
+          router.push('/dashboard');
+        } else {
+          setSuccess('Signup successful! You can now log in.');
+          setIsLogin(true);
+          setPassword('');
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Connection error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (authChecking) {
+    return (
+      <CityBackground>
+        <div style={{
+          display: 'flex',
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'var(--text-secondary)'
+        }}>
+          <p>Verifying session...</p>
+        </div>
+      </CityBackground>
+    );
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <CityBackground>
+      <div className={styles.container}>
+        <div className={`${styles.card} glass-panel`}>
+          <div className={styles.titleArea}>
+            <h1 className={styles.title}>Antigravity</h1>
+            <p className={styles.subtitle}>Two Truths and a Lie • AI Edition</p>
+          </div>
+
+          <div className={styles.tabs}>
+            <button
+              type="button"
+              className={`${styles.tab} ${isLogin ? styles.tabActive : ''}`}
+              onClick={() => {
+                setIsLogin(true);
+                setError('');
+                setSuccess('');
+                setAge('10');
+              }}
+              disabled={loading}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              Sign In
+            </button>
+            <button
+              type="button"
+              className={`${styles.tab} ${!isLogin ? styles.tabActive : ''}`}
+              onClick={() => {
+                setIsLogin(false);
+                setError('');
+                setSuccess('');
+                setAge('10');
+              }}
+              disabled={loading}
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              Register
+            </button>
+          </div>
+
+          {error && <div className={styles.error}>{error}</div>}
+          {success && <div className={styles.success}>{success}</div>}
+
+          <form onSubmit={handleSubmit} className={styles.form}>
+            <div className={styles.formGroup}>
+              <label htmlFor="username" className={styles.label}>
+                Username
+              </label>
+              <input
+                id="username"
+                type="text"
+                className={styles.input}
+                placeholder="Enter username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                disabled={loading}
+                autoComplete="username"
+                required
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="password" className={styles.label}>
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                className={styles.input}
+                placeholder="Enter password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+                autoComplete="current-password"
+                required
+              />
+            </div>
+
+            {!isLogin && (
+              <div className={styles.formGroup}>
+                <label htmlFor="age" className={styles.label}>
+                  Your Age (to show matching questions)
+                </label>
+                <input
+                  id="age"
+                  type="number"
+                  min="1"
+                  max="120"
+                  className={styles.input}
+                  placeholder="Enter your age"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  disabled={loading}
+                  required
+                />
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className={styles.submitBtn}
+              disabled={loading}
+            >
+              {loading ? 'Processing...' : isLogin ? 'Sign In' : 'Sign Up'}
+            </button>
+          </form>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      </div>
+    </CityBackground>
   );
 }
