@@ -18,31 +18,76 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const category = body.category || 'sports';
 
-    // 3. Generate 2 truths and a lie
-    console.log(`[game-generate] Generating round for category "${category}"...`);
-    
-    // Fetch the user's age to customize content difficulty
+    // 3. Check for an active, uncompleted game session for this user in this category
+    const activeSessionRes = await query(
+      `SELECT * FROM sessions 
+       WHERE user_id = $1 AND category = $2 AND completed = FALSE 
+       ORDER BY id DESC LIMIT 1`,
+      [sessionUser.userId, category]
+    );
+
+    let sessionId: number;
+    let currentQuestionCount = 0;
+    let currentSessionScore = 0;
+
+    if (activeSessionRes.rows.length > 0) {
+      const activeSession = activeSessionRes.rows[0];
+      sessionId = activeSession.id;
+      currentQuestionCount = activeSession.question_count;
+      currentSessionScore = activeSession.score;
+      
+      // If the session somehow exceeded 10 questions, mark it completed and create a new one
+      if (currentQuestionCount >= 10) {
+        await query('UPDATE sessions SET completed = TRUE WHERE id = $1', [sessionId]);
+        const newSessionRes = await query(
+          `INSERT INTO sessions (user_id, category, score, question_count, completed) 
+           VALUES ($1, $2, 0, 0, FALSE) RETURNING id`,
+          [sessionUser.userId, category]
+        );
+        sessionId = newSessionRes.rows[0].id;
+        currentQuestionCount = 0;
+        currentSessionScore = 0;
+      }
+    } else {
+      // Create a new session
+      console.log(`[game-generate] Starting new 10-question session in category "${category}"...`);
+      const newSessionRes = await query(
+        `INSERT INTO sessions (user_id, category, score, question_count, completed) 
+         VALUES ($1, $2, 0, 0, FALSE) RETURNING id`,
+        [sessionUser.userId, category]
+      );
+      sessionId = newSessionRes.rows[0].id;
+    }
+
+    // Increment question count for this session
+    currentQuestionCount += 1;
+    await query(
+      'UPDATE sessions SET question_count = $1 WHERE id = $2',
+      [currentQuestionCount, sessionId]
+    );
+
+    // 4. Fetch user's age to customize difficulty
     const userRes = await query('SELECT age FROM users WHERE id = $1', [sessionUser.userId]);
     const age = userRes.rows.length > 0 ? userRes.rows[0].age : 10;
 
-    // Fetch the user's recently played personas in this category to prevent repeats
+    // 5. Query user's recently played personas in this category/session to prevent repeats
     const recentRes = await query(
-      `SELECT DISTINCT persona FROM games 
-       WHERE user_id = $1 AND category = $2 AND guessed_index IS NOT NULL 
-       ORDER BY id DESC LIMIT 3`,
-      [sessionUser.userId, category]
+      `SELECT persona FROM games 
+       WHERE user_id = $1 AND (session_id = $2 OR category = $3) 
+       ORDER BY id DESC LIMIT 15`,
+      [sessionUser.userId, sessionId, category]
     );
-    const excludePersonas = recentRes.rows.map((row) => row.persona);
+    const excludePersonas = Array.from(new Set(recentRes.rows.map((row) => row.persona))).slice(0, 5);
 
+    // 6. Generate truths and lies (now passing age and exclusions list)
     const { persona, facts: originalFacts, lieIndex: originalLieIndex } = await generateTwoTruthsAndALie(category, age, excludePersonas);
 
-    // 4. Shuffle facts and track where the lie ends up
+    // 7. Shuffle facts and track where the lie ends up
     const items = originalFacts.map((fact, index) => ({
       text: fact,
       isLie: index === originalLieIndex,
     }));
 
-    // Perform a robust shuffle
     const shuffledItems = [...items];
     for (let i = shuffledItems.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -52,11 +97,11 @@ export async function POST(req: Request) {
     const shuffledFacts = shuffledItems.map((item) => item.text);
     const newLieIndex = shuffledItems.findIndex((item) => item.isLie);
 
-    // 5. Store the game state in Neon Postgres
-    console.log(`[game-generate] Saving game state to database for user ID ${sessionUser.userId}...`);
+    // 8. Store the game state in Neon Postgres linked to the session
+    console.log(`[game-generate] Saving game round to database for session ID ${sessionId}...`);
     const dbRes = await query(
-      `INSERT INTO games (user_id, persona, category, fact_1, fact_2, fact_3, lie_index)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO games (user_id, persona, category, fact_1, fact_2, fact_3, lie_index, session_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING id`,
       [
         sessionUser.userId,
@@ -66,17 +111,21 @@ export async function POST(req: Request) {
         shuffledFacts[1],
         shuffledFacts[2],
         newLieIndex,
+        sessionId,
       ]
     );
 
     const gameId = dbRes.rows[0].id;
 
-    // 6. Return gameplay details (do NOT return lie_index to prevent cheating)
+    // 9. Return gameplay details (do NOT return lie_index)
     return NextResponse.json({
       gameId,
       persona,
       category,
       facts: shuffledFacts,
+      sessionProgress: currentQuestionCount,
+      sessionScore: currentSessionScore,
+      sessionId
     });
   } catch (error) {
     console.error('[game-generate] Error:', error);

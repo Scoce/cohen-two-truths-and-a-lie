@@ -43,8 +43,8 @@ async function run() {
   const pool = new Pool({ connectionString });
 
   try {
-    // 1. Create Users Table with Age column
-    console.log('[init-db] Creating "users" table with "age" column...');
+    // 1. Create Users Table
+    console.log('[init-db] Creating "users" table...');
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -56,15 +56,28 @@ async function run() {
       );
     `);
 
-    // Run migration just in case table exists but doesn't have age column
+    // Ensure age column exists
     try {
-      console.log('[init-db] Running migration to ensure "age" column exists...');
       await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS age INT DEFAULT 10;');
     } catch (migErr) {
-      console.log('[init-db] Age column check completed.');
+      // Ignore
     }
 
-    // 2. Create Games Table
+    // 2. Create Sessions Table
+    console.log('[init-db] Creating "sessions" table...');
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id SERIAL PRIMARY KEY,
+        user_id INT REFERENCES users(id) ON DELETE CASCADE,
+        category VARCHAR(50) NOT NULL,
+        question_count INT DEFAULT 0,
+        score INT DEFAULT 0,
+        completed BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 3. Create Games Table
     console.log('[init-db] Creating "games" table...');
     await pool.query(`
       CREATE TABLE IF NOT EXISTS games (
@@ -78,11 +91,41 @@ async function run() {
         lie_index INT NOT NULL,
         guessed_index INT,
         is_correct BOOLEAN,
+        session_id INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
-    // 3. Seed Test User
+    // Ensure session_id column exists
+    try {
+      await pool.query('ALTER TABLE games ADD COLUMN IF NOT EXISTS session_id INT REFERENCES sessions(id) ON DELETE SET NULL;');
+    } catch (migErr) {
+      // Ignore
+    }
+
+    // 4. Create Leaderboards Table
+    console.log('[init-db] Creating "leaderboards" table...');
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS leaderboards (
+        id SERIAL PRIMARY KEY,
+        user_id INT REFERENCES users(id) ON DELETE CASCADE,
+        player_name VARCHAR(50) NOT NULL,
+        score INT NOT NULL,
+        category VARCHAR(50) NOT NULL,
+        age_group VARCHAR(20) NOT NULL,
+        session_id INT REFERENCES sessions(id) ON DELETE SET NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Ensure session_id column exists on leaderboards table
+    try {
+      await pool.query('ALTER TABLE leaderboards ADD COLUMN IF NOT EXISTS session_id INT REFERENCES sessions(id) ON DELETE SET NULL;');
+    } catch (migErr) {
+      // Ignore
+    }
+
+    // 5. Seed Test User
     const testUsername = 'testuser';
     const testPassword = 'password123';
     console.log(`[init-db] Checking if test user "${testUsername}" exists...`);
@@ -94,7 +137,6 @@ async function run() {
       const salt = bcrypt.genSaltSync(10);
       const passwordHash = bcrypt.hashSync(testPassword, salt);
       
-      // Seed testuser with age 8 for kid-friendly testing
       await pool.query(
         'INSERT INTO users (username, password_hash, age) VALUES ($1, $2, 8)',
         [testUsername, passwordHash]

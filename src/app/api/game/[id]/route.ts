@@ -41,6 +41,25 @@ export async function GET(
 
     const game = gameRes.rows[0];
 
+    // Fetch session details if session_id is associated
+    let sessionProgress = 1;
+    let sessionScore = 0;
+    let sessionCompleted = false;
+    const sessionId = game.session_id;
+
+    if (game.session_id !== null) {
+      const sessionRes = await query(
+        'SELECT * FROM sessions WHERE id = $1',
+        [game.session_id]
+      );
+      if (sessionRes.rows.length > 0) {
+        const session = sessionRes.rows[0];
+        sessionProgress = session.question_count;
+        sessionScore = session.score;
+        sessionCompleted = session.completed;
+      }
+    }
+
     // 3. If already played, return the results
     if (game.guessed_index !== null) {
       return NextResponse.json({
@@ -51,7 +70,11 @@ export async function GET(
         guessedIndex: game.guessed_index,
         lieIndex: game.lie_index,
         isCorrect: game.is_correct,
-        played: true
+        played: true,
+        sessionProgress,
+        sessionScore,
+        sessionCompleted,
+        sessionId
       });
     }
 
@@ -61,7 +84,11 @@ export async function GET(
       persona: game.persona,
       category: game.category,
       facts: [game.fact_1, game.fact_2, game.fact_3],
-      played: false
+      played: false,
+      sessionProgress,
+      sessionScore,
+      sessionCompleted,
+      sessionId
     });
   } catch (error) {
     console.error('[game-get-api] Error:', error);

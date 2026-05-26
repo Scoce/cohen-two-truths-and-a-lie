@@ -22,15 +22,25 @@ interface Category {
   glowColor: string;
 }
 
+interface LeaderboardEntry {
+  id: number;
+  playerName: string;
+  score: number;
+  category: string;
+  ageGroup: string;
+  createdAt: string;
+}
+
 export default function Dashboard() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [generatingCategory, setGeneratingCategory] = useState('');
 
   useEffect(() => {
-    async function fetchUser() {
+    async function fetchUserAndLeaderboard() {
       try {
         const res = await fetch('/api/auth/me');
         if (!res.ok) {
@@ -39,20 +49,26 @@ export default function Dashboard() {
         }
         const data = await res.json();
         setUser(data.user);
+
+        // Fetch leaderboard
+        const leaderboardRes = await fetch('/api/leaderboard');
+        if (leaderboardRes.ok) {
+          const leaderboardData = await leaderboardRes.json();
+          setLeaderboard(leaderboardData.leaderboard || []);
+        }
       } catch (err) {
-        console.error('Error fetching user:', err);
+        console.error('Error fetching dashboard data:', err);
         router.push('/');
       } finally {
         setLoading(false);
       }
     }
-    fetchUser();
+    fetchUserAndLeaderboard();
   }, [router]);
 
   const handleLogout = async () => {
     try {
       await fetch('/api/api/auth/logout', { method: 'POST' }).catch(() => {});
-      // Just in case, call the actual correct route as well
       await fetch('/api/auth/logout', { method: 'POST' });
       router.push('/');
     } catch (err) {
@@ -121,7 +137,7 @@ export default function Dashboard() {
         ? 'Test your knowledge on legendary sports stars like Lionel Messi and LeBron James!'
         : 'Deconstruct facts and myths about legendary athletes, Olympic champions, and world-record holders.',
       icon: <Trophy size={24} />,
-      color: '#3b82f6', // blue
+      color: '#3b82f6',
       glowColor: 'rgba(59, 130, 246, 0.25)',
     },
     {
@@ -131,7 +147,7 @@ export default function Dashboard() {
         ? 'Find the truths and lies about awesome characters like Elsa, Harry Potter, and superheroes!'
         : 'Crack deep trivia about Hollywood icons, Oscar winners, and legendary filmmakers.',
       icon: <Film size={24} />,
-      color: '#ec4899', // pink
+      color: '#ec4899',
       glowColor: 'rgba(236, 72, 153, 0.25)',
     },
     {
@@ -141,7 +157,7 @@ export default function Dashboard() {
         ? 'Guess truths and lies about cool inventors, astronauts, and science explorers!'
         : 'Discover truths and lies about geniuses, breakthrough inventors, and tech visionaries.',
       icon: <Atom size={24} />,
-      color: '#10b981', // green
+      color: '#10b981',
       glowColor: 'rgba(16, 185, 129, 0.25)',
     },
     {
@@ -151,7 +167,7 @@ export default function Dashboard() {
         ? 'Explore cool history facts, ancient Egypt, pharaohs, and brave adventurers!'
         : 'Explore ancient rulers, revolutionary leaders, and historical figures who shaped the world.',
       icon: <BookOpen size={24} />,
-      color: '#eab308', // yellow/gold
+      color: '#eab308',
       glowColor: 'rgba(234, 179, 8, 0.25)',
     },
     {
@@ -161,7 +177,7 @@ export default function Dashboard() {
         ? 'Sort facts from fiction about singers like Taylor Swift and other fun musicians!'
         : 'Sort facts from fiction regarding rock stars, pop icons, and classical virtuosos.',
       icon: <MusicIcon size={24} />,
-      color: '#a855f7', // purple
+      color: '#a855f7',
       glowColor: 'rgba(168, 85, 247, 0.25)',
     },
   ];
@@ -217,35 +233,82 @@ export default function Dashboard() {
           )}
         </header>
 
-        {/* Welcome Section */}
-        <div className={styles.welcomeSection}>
-          <h2 className={styles.welcomeTitle}>Choose a Fun Category!</h2>
-          <p className={styles.welcomeDesc}>
-            Pick a topic below. The Gemini AI will make two truths and a lie about a famous person or cartoon character. Can you find the lie?
-          </p>
-        </div>
-
-        {/* Categories Grid */}
-        <div className={styles.grid}>
-          {categories.map((cat) => (
-            <div
-              key={cat.id}
-              className={`${styles.categoryCard} glass-panel`}
-              style={{
-                // Custom properties passed down to CSS
-                ['--card-color' as any]: cat.color,
-                ['--card-color-glow' as any]: cat.glowColor,
-              }}
-              onClick={() => handleSelectCategory(cat.id, cat.name)}
-            >
-              <div className={styles.iconWrapper}>{cat.icon}</div>
-              <h3 className={styles.cardTitle}>{cat.name}</h3>
-              <p className={styles.cardDescription}>{cat.description}</p>
-              <button type="button" className={styles.playBtn} aria-label={`Play ${cat.name}`}>
-                Play Now <ArrowRight size={16} />
-              </button>
+        {/* Two-Column Main Layout */}
+        <div className={styles.mainLayout}>
+          {/* Left Column: Categories Grid */}
+          <div className={styles.categoriesSection}>
+            <div className={styles.welcomeSection}>
+              <h2 className={styles.welcomeTitle}>Choose a Fun Category!</h2>
+              <p className={styles.welcomeDesc}>
+                Pick a topic below. The Gemini AI will make two truths and a lie about a famous person or cartoon character. Can you find the lie?
+              </p>
             </div>
-          ))}
+
+            <div className={styles.grid}>
+              {categories.map((cat) => (
+                <div
+                  key={cat.id}
+                  className={`${styles.categoryCard} glass-panel`}
+                  style={{
+                    // Custom properties passed down to CSS
+                    ['--card-color' as any]: cat.color,
+                    ['--card-color-glow' as any]: cat.glowColor,
+                  }}
+                  onClick={() => handleSelectCategory(cat.id, cat.name)}
+                >
+                  <div className={styles.iconWrapper}>{cat.icon}</div>
+                  <h3 className={styles.cardTitle}>{cat.name}</h3>
+                  <p className={styles.cardDescription}>{cat.description}</p>
+                  <button type="button" className={styles.playBtn} aria-label={`Play ${cat.name}`}>
+                    Play Now <ArrowRight size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right Column: Leaderboard Sidebar */}
+          <div className={`${styles.leaderboardSection} glass-panel`}>
+            <div className={styles.leaderboardHeader}>
+              <Trophy size={22} color="var(--neon-cyan)" style={{ filter: 'drop-shadow(0 0 5px var(--neon-cyan-glow))' }} />
+              <div>
+                <h3 className={styles.leaderboardTitle}>Monthly Hall of Fame</h3>
+                <div className={styles.leaderboardSubtitle}>Top Players this month</div>
+              </div>
+            </div>
+
+            <div className={styles.leaderboardList}>
+              {leaderboard.length > 0 ? (
+                leaderboard.map((entry, index) => {
+                  const rank = index + 1;
+                  let rankClass = styles.playerRank;
+                  if (rank === 1) rankClass += ` ${styles.playerRank1}`;
+                  else if (rank === 2) rankClass += ` ${styles.playerRank2}`;
+                  else if (rank === 3) rankClass += ` ${styles.playerRank3}`;
+
+                  const isCurrentUser = user && entry.playerName.toLowerCase() === user.username.toLowerCase();
+                  const itemClass = `${styles.leaderboardItem} ${isCurrentUser ? styles.leaderboardItemActive : ''}`;
+
+                  return (
+                    <div key={entry.id} className={itemClass}>
+                      <div className={rankClass}>#{rank}</div>
+                      <div className={styles.playerInfo}>
+                        <div className={styles.playerNameText}>{entry.playerName}</div>
+                        <div className={styles.playerMetaText}>
+                          {entry.category} • {entry.ageGroup}
+                        </div>
+                      </div>
+                      <div className={styles.playerScore}>{entry.score} pts</div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className={styles.emptyLeaderboard}>
+                  No entries yet this month. Be the first to claim a spot on the board!
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 

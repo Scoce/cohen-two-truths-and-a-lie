@@ -33,6 +33,16 @@ interface MockUser {
   created_at: Date;
 }
 
+interface MockSession {
+  id: number;
+  user_id: number;
+  category: string;
+  question_count: number;
+  score: number;
+  completed: boolean;
+  created_at: Date;
+}
+
 interface MockGame {
   id: number;
   user_id: number;
@@ -44,6 +54,18 @@ interface MockGame {
   lie_index: number;
   guessed_index: number | null;
   is_correct: boolean | null;
+  session_id: number | null;
+  created_at: Date;
+}
+
+interface MockLeaderboard {
+  id: number;
+  user_id: number;
+  player_name: string;
+  score: number;
+  category: string;
+  age_group: string;
+  session_id: number | null;
   created_at: Date;
 }
 
@@ -61,7 +83,9 @@ const mockUsers: MockUser[] = [
   },
 ];
 
+const mockSessions: MockSession[] = [];
 const mockGames: MockGame[] = [];
+const mockLeaderboards: MockLeaderboard[] = [];
 
 let dbInitialized = false;
 let dbInitializing = false;
@@ -71,52 +95,83 @@ async function ensureTables() {
   dbInitializing = true;
   try {
     console.log('[db] Verifying database schema on Neon...');
-    // Check if users table exists
-    const tableCheck = await pool.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_name = 'users'
+    
+    // 1. Create Users Table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        score INT DEFAULT 0,
+        age INT DEFAULT 10,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    
-    const exists = tableCheck.rows[0]?.exists;
-    if (!exists) {
-      console.log('[db] Schema not found. Creating database tables on Neon...');
-      // 1. Create Users Table
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS users (
-          id SERIAL PRIMARY KEY,
-          username VARCHAR(50) UNIQUE NOT NULL,
-          password_hash TEXT NOT NULL,
-          score INT DEFAULT 0,
-          age INT DEFAULT 10,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-      `);
 
-      // 2. Create Games Table
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS games (
-          id SERIAL PRIMARY KEY,
-          user_id INT REFERENCES users(id) ON DELETE CASCADE,
-          persona VARCHAR(100) NOT NULL,
-          category VARCHAR(50) NOT NULL,
-          fact_1 TEXT NOT NULL,
-          fact_2 TEXT NOT NULL,
-          fact_3 TEXT NOT NULL,
-          lie_index INT NOT NULL,
-          guessed_index INT,
-          is_correct BOOLEAN,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-      `);
-    }
-
-    // Ensure age column exists (if table was created before age setter update)
+    // Ensure age column exists
     try {
       await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS age INT DEFAULT 10;');
     } catch (migErr) {
-      // Ignore if column already exists
+      // Ignore
+    }
+
+    // 2. Create Sessions Table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id SERIAL PRIMARY KEY,
+        user_id INT REFERENCES users(id) ON DELETE CASCADE,
+        category VARCHAR(50) NOT NULL,
+        question_count INT DEFAULT 0,
+        score INT DEFAULT 0,
+        completed BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 3. Create Games Table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS games (
+        id SERIAL PRIMARY KEY,
+        user_id INT REFERENCES users(id) ON DELETE CASCADE,
+        persona VARCHAR(100) NOT NULL,
+        category VARCHAR(50) NOT NULL,
+        fact_1 TEXT NOT NULL,
+        fact_2 TEXT NOT NULL,
+        fact_3 TEXT NOT NULL,
+        lie_index INT NOT NULL,
+        guessed_index INT,
+        is_correct BOOLEAN,
+        session_id INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Ensure session_id column exists
+    try {
+      await pool.query('ALTER TABLE games ADD COLUMN IF NOT EXISTS session_id INT REFERENCES sessions(id) ON DELETE SET NULL;');
+    } catch (migErr) {
+      // Ignore
+    }
+
+    // 4. Create Leaderboards Table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS leaderboards (
+        id SERIAL PRIMARY KEY,
+        user_id INT REFERENCES users(id) ON DELETE CASCADE,
+        player_name VARCHAR(50) NOT NULL,
+        score INT NOT NULL,
+        category VARCHAR(50) NOT NULL,
+        age_group VARCHAR(20) NOT NULL,
+        session_id INT REFERENCES sessions(id) ON DELETE SET NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Ensure session_id column exists on leaderboards table
+    try {
+      await pool.query('ALTER TABLE leaderboards ADD COLUMN IF NOT EXISTS session_id INT REFERENCES sessions(id) ON DELETE SET NULL;');
+    } catch (migErr) {
+      // Ignore
     }
 
     // Ensure default test user exists
@@ -173,7 +228,7 @@ export const query = async (text: string, params: any[] = []) => {
     return { rows, rowCount: rows.length };
   }
 
-  // INSERT INTO users (username, password_hash, age) or INSERT INTO users (username, password_hash)
+  // INSERT INTO users
   if (queryNormalized.includes('INSERT INTO users')) {
     const username = params[0];
     const password_hash = params[1];
@@ -181,7 +236,7 @@ export const query = async (text: string, params: any[] = []) => {
     
     if (mockUsers.some((u) => u.username.toLowerCase() === username.toLowerCase())) {
       const err = new Error('duplicate key value violates unique constraint');
-      (err as any).code = '23505'; // Postgres code for unique violation
+      (err as any).code = '23505';
       throw err;
     }
 
@@ -197,7 +252,7 @@ export const query = async (text: string, params: any[] = []) => {
     return { rows: [newUser], rowCount: 1 };
   }
 
-  // UPDATE users SET score = score + 10 WHERE id = $1 RETURNING score
+  // UPDATE users SET score = score + 10
   if (queryNormalized.includes('UPDATE users SET score = score + 10')) {
     const id = params[0];
     const user = mockUsers.find((u) => u.id === id);
@@ -220,16 +275,52 @@ export const query = async (text: string, params: any[] = []) => {
     return { rows: [], rowCount: 0 };
   }
 
-  // SELECT ... FROM users WHERE id = $1 (generic user finder)
+  // SELECT ... FROM users WHERE id = $1
   if (queryNormalized.includes('FROM users WHERE id =')) {
     const id = params[0];
     const user = mockUsers.find((u) => u.id === id);
     return { rows: user ? [user] : [], rowCount: user ? 1 : 0 };
   }
 
-  // INSERT INTO games (user_id, persona, category, fact_1, fact_2, fact_3, lie_index)
+  // SELECT * FROM sessions WHERE user_id = $1 AND category = $2 AND completed = FALSE
+  if (queryNormalized.includes('FROM sessions') && queryNormalized.includes('completed = FALSE')) {
+    const [user_id, category] = params;
+    const session = mockSessions.find((s) => s.user_id === user_id && s.category === category && !s.completed);
+    return { rows: session ? [session] : [], rowCount: session ? 1 : 0 };
+  }
+
+  // INSERT INTO sessions
+  if (queryNormalized.includes('INSERT INTO sessions')) {
+    const [user_id, category, score, question_count, completed] = params;
+    const newSession: MockSession = {
+      id: mockSessions.length + 1,
+      user_id,
+      category,
+      question_count: question_count || 0,
+      score: score || 0,
+      completed: completed || false,
+      created_at: new Date(),
+    };
+    mockSessions.push(newSession);
+    return { rows: [newSession], rowCount: 1 };
+  }
+
+  // UPDATE sessions SET question_count = $1, score = $2, completed = $3 WHERE id = $4
+  if (queryNormalized.includes('UPDATE sessions SET question_count =')) {
+    const [question_count, score, completed, id] = params;
+    const session = mockSessions.find((s) => s.id === id);
+    if (session) {
+      session.question_count = question_count;
+      session.score = score;
+      session.completed = completed;
+      return { rows: [session], rowCount: 1 };
+    }
+    return { rows: [], rowCount: 0 };
+  }
+
+  // INSERT INTO games
   if (queryNormalized.includes('INSERT INTO games')) {
-    const [user_id, persona, category, fact_1, fact_2, fact_3, lie_index] = params;
+    const [user_id, persona, category, fact_1, fact_2, fact_3, lie_index, session_id] = params;
     const newGame: MockGame = {
       id: mockGames.length + 1,
       user_id,
@@ -241,6 +332,7 @@ export const query = async (text: string, params: any[] = []) => {
       lie_index,
       guessed_index: null,
       is_correct: null,
+      session_id: session_id || null,
       created_at: new Date(),
     };
     mockGames.push(newGame);
@@ -264,6 +356,40 @@ export const query = async (text: string, params: any[] = []) => {
       return { rows: [game], rowCount: 1 };
     }
     return { rows: [], rowCount: 0 };
+  }
+
+  // INSERT INTO leaderboards
+  if (queryNormalized.includes('INSERT INTO leaderboards')) {
+    const [user_id, player_name, score, category, age_group, session_id] = params;
+    const newRecord: MockLeaderboard = {
+      id: mockLeaderboards.length + 1,
+      user_id,
+      player_name,
+      score,
+      category,
+      age_group,
+      session_id: session_id || null,
+      created_at: new Date(),
+    };
+    mockLeaderboards.push(newRecord);
+    return { rows: [newRecord], rowCount: 1 };
+  }
+
+  // SELECT ... FROM leaderboards WHERE session_id = $1
+  if (queryNormalized.includes('FROM leaderboards WHERE session_id =')) {
+    const session_id = params[0];
+    const record = mockLeaderboards.find((l) => l.session_id === session_id);
+    return { rows: record ? [record] : [], rowCount: record ? 1 : 0 };
+  }
+
+  // SELECT ... FROM leaderboards
+  if (queryNormalized.includes('FROM leaderboards')) {
+    const now = new Date();
+    const filtered = mockLeaderboards
+      .filter((l) => l.created_at.getMonth() === now.getMonth() && l.created_at.getFullYear() === now.getFullYear())
+      .sort((a, b) => b.score - a.score || a.created_at.getTime() - b.created_at.getTime())
+      .slice(0, 10);
+    return { rows: filtered, rowCount: filtered.length };
   }
 
   console.warn('[db] Unhandled query in in-memory simulator:', queryNormalized);

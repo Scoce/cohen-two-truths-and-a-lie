@@ -55,27 +55,58 @@ export async function POST(req: Request) {
       [guessedIndex, isCorrect, gameId]
     );
 
-    // 7. Update user score if correct
-    let updatedScore = 0;
+    // 7. Update Session state and User score
+    let sessionProgress = 1;
+    let sessionScore = 0;
+    let sessionCompleted = false;
+    let updatedTotalScore = 0;
+
+    const pointsEarned = isCorrect ? 20 : 0;
+
+    if (game.session_id !== null) {
+      // Get current session
+      const sessionRes = await query(
+        'SELECT * FROM sessions WHERE id = $1',
+        [game.session_id]
+      );
+      
+      if (sessionRes.rows.length > 0) {
+        const session = sessionRes.rows[0];
+        sessionProgress = session.question_count;
+        sessionScore = session.score + pointsEarned;
+        sessionCompleted = sessionProgress >= 10;
+
+        // Save updated session state
+        await query(
+          'UPDATE sessions SET score = $1, completed = $2 WHERE id = $3',
+          [sessionScore, sessionCompleted, game.session_id]
+        );
+      }
+    }
+
+    // Update user's total score in the database
     if (isCorrect) {
       const userRes = await query(
-        'UPDATE users SET score = score + 10 WHERE id = $1 RETURNING score',
-        [sessionUser.userId]
+        'UPDATE users SET score = score + $1 WHERE id = $2 RETURNING score',
+        [pointsEarned, sessionUser.userId]
       );
-      updatedScore = userRes.rows[0].score;
+      updatedTotalScore = userRes.rows[0].score;
     } else {
       const userRes = await query(
         'SELECT score FROM users WHERE id = $1',
         [sessionUser.userId]
       );
-      updatedScore = userRes.rows[0].score;
+      updatedTotalScore = userRes.rows[0].score;
     }
 
     // 8. Return response
     return NextResponse.json({
       isCorrect,
       lieIndex: game.lie_index,
-      updatedScore,
+      sessionProgress,
+      sessionScore,
+      sessionCompleted,
+      updatedScore: updatedTotalScore,
     });
   } catch (error) {
     console.error('[game-submit] Error:', error);
