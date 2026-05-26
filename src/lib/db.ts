@@ -63,6 +63,83 @@ const mockUsers: MockUser[] = [
 
 const mockGames: MockGame[] = [];
 
+let dbInitialized = false;
+let dbInitializing = false;
+
+async function ensureTables() {
+  if (dbInitialized || dbInitializing || !pool) return;
+  dbInitializing = true;
+  try {
+    console.log('[db] Verifying database schema on Neon...');
+    // Check if users table exists
+    const tableCheck = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_name = 'users'
+      );
+    `);
+    
+    const exists = tableCheck.rows[0]?.exists;
+    if (!exists) {
+      console.log('[db] Schema not found. Creating database tables on Neon...');
+      // 1. Create Users Table
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS users (
+          id SERIAL PRIMARY KEY,
+          username VARCHAR(50) UNIQUE NOT NULL,
+          password_hash TEXT NOT NULL,
+          score INT DEFAULT 0,
+          age INT DEFAULT 10,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      // 2. Create Games Table
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS games (
+          id SERIAL PRIMARY KEY,
+          user_id INT REFERENCES users(id) ON DELETE CASCADE,
+          persona VARCHAR(100) NOT NULL,
+          category VARCHAR(50) NOT NULL,
+          fact_1 TEXT NOT NULL,
+          fact_2 TEXT NOT NULL,
+          fact_3 TEXT NOT NULL,
+          lie_index INT NOT NULL,
+          guessed_index INT,
+          is_correct BOOLEAN,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+    }
+
+    // Ensure age column exists (if table was created before age setter update)
+    try {
+      await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS age INT DEFAULT 10;');
+    } catch (migErr) {
+      // Ignore if column already exists
+    }
+
+    // Ensure default test user exists
+    const userCheck = await pool.query("SELECT id FROM users WHERE username = 'testuser'");
+    if (userCheck.rows.length === 0) {
+      console.log('[db] Seeding testuser into Neon database...');
+      const salt = bcrypt.genSaltSync(10);
+      const passwordHash = bcrypt.hashSync('password123', salt);
+      await pool.query(
+        "INSERT INTO users (username, password_hash, age) VALUES ('testuser', $1, 8)",
+        [passwordHash]
+      );
+      console.log('[db] Seeded testuser successfully.');
+    }
+
+    dbInitialized = true;
+  } catch (err) {
+    console.error('[db] Database auto-initialization/migration failed:', err);
+  } finally {
+    dbInitializing = false;
+  }
+}
+
 // ==========================================
 // Database Query Routing
 // ==========================================
@@ -72,6 +149,9 @@ export const query = async (text: string, params: any[] = []) => {
 
   // 1. If real database is configured
   if (pool) {
+    if (!dbInitialized) {
+      await ensureTables();
+    }
     try {
       const res = await pool.query(text, params);
       const duration = Date.now() - start;
