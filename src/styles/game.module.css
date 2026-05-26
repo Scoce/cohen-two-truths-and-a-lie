@@ -392,3 +392,92 @@
   text-align: center;
 }
 
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+    gap: 1.5rem;
+  }
+
+  .header {
+    padding: 0.75rem 1rem;
+  }
+
+  .headerGroups {
+    gap: 0.5rem;
+  }
+
+  .sessionBadge, .scoreGroup {
+    padding: 0.4rem 0.6rem;
+  }
+
+  .sessionLabel, .scoreLabel {
+    font-size: 0.75rem;
+  }
+
+  .sessionVal, .scoreVal {
+    font-size: 0.85rem;
+  }
+
+  .personaName {
+    font-size: 2rem;
+  }
+
+  .promptText {
+    font-size: 0.9rem;
+  }
+
+  .card {
+    padding: 1.25rem 1rem 2.75rem 1rem;
+    gap: 1rem;
+  }
+
+  .cardNum {
+    width: 28px;
+    height: 28px;
+    font-size: 1rem;
+    border-radius: 6px;
+  }
+
+  .cardText {
+    font-size: 1rem;
+    padding-right: 0;
+  }
+
+  .badge {
+    top: auto;
+    bottom: 0.75rem;
+    right: 1rem;
+  }
+
+  .resultSection {
+    padding: 1.5rem;
+  }
+
+  .resultTitle {
+    font-size: 1.75rem;
+  }
+
+  .resultText {
+    font-size: 0.95rem;
+  }
+
+  .actionRow {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.75rem;
+  }
+
+  .btnPrimary, .btnSecondary {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .leaderboardForm {
+    padding: 1rem;
+    margin-top: 1rem;
+  }
+}
+
+
