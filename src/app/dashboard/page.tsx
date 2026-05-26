@@ -39,8 +39,9 @@ export default function Dashboard() {
   const [generating, setGenerating] = useState(false);
   const [generatingCategory, setGeneratingCategory] = useState('');
   
-  // Modal state
+  // Modal states
   const [showLeaderboardModal, setShowLeaderboardModal] = useState(false);
+  const [activeLeaderboardTab, setActiveLeaderboardTab] = useState<'Children' | 'Teens' | 'Adults'>('Adults');
 
   useEffect(() => {
     async function fetchUserAndLeaderboard() {
@@ -52,6 +53,15 @@ export default function Dashboard() {
         }
         const data = await res.json();
         setUser(data.user);
+
+        // Set default leaderboard tab based on user age
+        if (data.user.age < 12) {
+          setActiveLeaderboardTab('Children');
+        } else if (data.user.age < 18) {
+          setActiveLeaderboardTab('Teens');
+        } else {
+          setActiveLeaderboardTab('Adults');
+        }
 
         // Fetch leaderboard
         const leaderboardRes = await fetch('/api/leaderboard');
@@ -94,6 +104,15 @@ export default function Dashboard() {
       }
 
       setUser(prev => prev ? { ...prev, age: newAge } : null);
+      
+      // Update active tab based on new age selection
+      if (newAge < 12) {
+        setActiveLeaderboardTab('Children');
+      } else if (newAge < 18) {
+        setActiveLeaderboardTab('Teens');
+      } else {
+        setActiveLeaderboardTab('Adults');
+      }
     } catch (err) {
       console.error(err);
       alert('Failed to update age. Please try again.');
@@ -185,6 +204,10 @@ export default function Dashboard() {
     },
   ];
 
+  const filteredLeaderboard = leaderboard.filter(
+    (entry) => entry.ageGroup === activeLeaderboardTab
+  );
+
   if (loading) {
     return (
       <CityBackground>
@@ -251,7 +274,7 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Categories Grid (Takes up full width now) */}
+        {/* Categories Grid (Takes up full width) */}
         <div className={styles.grid}>
           {categories.map((cat) => (
             <div
@@ -303,9 +326,31 @@ export default function Dashboard() {
             </div>
 
             <div className={styles.modalBody}>
+              {/* Leaderboard Age Category Tabs */}
+              <div className={styles.tabsContainer}>
+                <button 
+                  onClick={() => setActiveLeaderboardTab('Children')}
+                  className={`${styles.tabBtn} ${activeLeaderboardTab === 'Children' ? styles.activeTab : ''}`}
+                >
+                  Children (Under 12)
+                </button>
+                <button 
+                  onClick={() => setActiveLeaderboardTab('Teens')}
+                  className={`${styles.tabBtn} ${activeLeaderboardTab === 'Teens' ? styles.activeTab : ''}`}
+                >
+                  Teens (12-17)
+                </button>
+                <button 
+                  onClick={() => setActiveLeaderboardTab('Adults')}
+                  className={`${styles.tabBtn} ${activeLeaderboardTab === 'Adults' ? styles.activeTab : ''}`}
+                >
+                  Adults (18+)
+                </button>
+              </div>
+
               <div className={styles.leaderboardList}>
-                {leaderboard.length > 0 ? (
-                  leaderboard.map((entry, index) => {
+                {filteredLeaderboard.length > 0 ? (
+                  filteredLeaderboard.map((entry, index) => {
                     const rank = index + 1;
                     let rankClass = styles.playerRank;
                     if (rank === 1) rankClass += ` ${styles.playerRank1}`;
@@ -321,7 +366,7 @@ export default function Dashboard() {
                         <div className={styles.playerInfo}>
                           <div className={styles.playerNameText}>{entry.playerName}</div>
                           <div className={styles.playerMetaText}>
-                            {entry.category} • {entry.ageGroup}
+                            {entry.category}
                           </div>
                         </div>
                         <div className={styles.playerScore}>{entry.score} pts</div>
@@ -330,7 +375,7 @@ export default function Dashboard() {
                   })
                 ) : (
                   <div className={styles.emptyLeaderboard}>
-                    No entries yet this month. Be the first to claim a spot on the board!
+                    No entries yet in the {activeLeaderboardTab} division. Be the first to claim a spot!
                   </div>
                 )}
               </div>

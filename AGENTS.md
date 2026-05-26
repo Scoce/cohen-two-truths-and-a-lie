@@ -24,3 +24,7 @@ As a coding agent on this project, you must adhere to the following rules at all
    - Prioritize security in all layers: write parameterized SQL queries, sanitize inputs, restrict lengths/regex formats, and block XSS/injection vectors.
    - Enforce runtime checks for critical variables (like JWT secrets) in production, and set secure HTTP headers (such as X-Frame-Options and X-Content-Type-Options) to protect layouts.
 
+5. **Mobile-First & Responsive Layouts**
+   - Always code with a mobile-friendly mindset: use flexible grid/flexbox layouts, responsive media queries, fluid sizing (rem/em/vw), and touch-friendly target sizes (min 44x44px) so everything renders beautifully on screens from 320px up.
+
+
