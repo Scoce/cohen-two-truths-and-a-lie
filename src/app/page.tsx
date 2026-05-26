@@ -99,7 +99,7 @@ export default function Home() {
       <div className={styles.container}>
         <div className={`${styles.card} glass-panel`}>
           <div className={styles.titleArea}>
-            <h1 className={styles.title}>Antigravity</h1>
+            <h1 className={styles.title}>Truths and Lies</h1>
             <p className={styles.subtitle}>Two Truths and a Lie • AI Edition</p>
           </div>
 

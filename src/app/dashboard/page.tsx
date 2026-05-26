@@ -206,7 +206,7 @@ export default function Dashboard() {
       <div className={styles.container}>
         {/* Header */}
         <header className={`${styles.header} glass-panel`}>
-          <div className={styles.title}>Antigravity</div>
+          <div className={styles.title}>Truths and Lies</div>
           {user && (
             <div className={styles.userInfo}>
               <div className={styles.ageSelectorGroup}>
