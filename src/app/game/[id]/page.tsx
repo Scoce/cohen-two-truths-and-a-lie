@@ -51,8 +51,20 @@ export default function GameRound() {
   const [fetchingHint, setFetchingHint] = useState(false);
   const [pointsEarned, setPointsEarned] = useState<number | null>(null);
 
+  const [showHintModal, setShowHintModal] = useState(false);
+  const [nextGameId, setNextGameId] = useState<number | null>(null);
+  const [pregenerating, setPregenerating] = useState(false);
+  const nextGameIdRef = React.useRef<number | null>(null);
+
   const handleRequestHint = async () => {
-    if (!game || game.played || fetchingHint || hintsUsed >= 2) return;
+    if (!game || game.played || fetchingHint) return;
+
+    if (activeHint) {
+      setShowHintModal(true);
+      return;
+    }
+
+    if (hintsUsed >= 2) return;
 
     setFetchingHint(true);
     try {
@@ -69,6 +81,7 @@ export default function GameRound() {
       const result = await res.json();
       setActiveHint(result.hint);
       setHintsUsed(result.hintsUsed);
+      setShowHintModal(true);
     } catch (err) {
       console.error(err);
       alert('Error fetching hint. Please try again.');
@@ -129,6 +142,35 @@ export default function GameRound() {
     initPage();
   }, [gameId]);
 
+  // Background pre-generation for the next session round
+  useEffect(() => {
+    if (!game || game.played || sessionCompleted || nextGameId || pregenerating) return;
+    if (sessionProgress !== null && sessionProgress >= 10) return;
+
+    async function pregenerateNextRound() {
+      setPregenerating(true);
+      try {
+        const response = await fetch('/api/game/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ category: game?.category }),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setNextGameId(data.gameId);
+          nextGameIdRef.current = data.gameId;
+        }
+      } catch (err) {
+        console.error('[pregenerate] Background generation failed:', err);
+      } finally {
+        setPregenerating(false);
+      }
+    }
+
+    const timer = setTimeout(pregenerateNextRound, 800);
+    return () => clearTimeout(timer);
+  }, [game, sessionProgress, sessionCompleted, nextGameId, pregenerating]);
+
   // 2. Submit guess
   const handleGuess = async (index: number) => {
     if (!game || game.played || submitting) return;
@@ -181,10 +223,41 @@ export default function GameRound() {
     }
   };
 
-  // 3. Play again (generates a new round in the same category)
+  // 3. Play again (uses pre-generated round or generates on demand)
   const handlePlayAgain = async () => {
     if (!game) return;
+
+    if (nextGameIdRef.current) {
+      router.push(`/game/${nextGameIdRef.current}`);
+      return;
+    }
+
     setLoading(true);
+
+    if (pregenerating) {
+      // Poll for the background generation to finish
+      const checkInterval = setInterval(() => {
+        if (nextGameIdRef.current) {
+          clearInterval(checkInterval);
+          router.push(`/game/${nextGameIdRef.current}`);
+        }
+      }, 100);
+      
+      // Cancel after 8 seconds and try manual fallback
+      setTimeout(() => {
+        clearInterval(checkInterval);
+        if (!nextGameIdRef.current) {
+          generateManualFallback();
+        }
+      }, 8000);
+      return;
+    }
+
+    await generateManualFallback();
+  };
+
+  const generateManualFallback = async () => {
+    if (!game) return;
     try {
       const response = await fetch('/api/game/generate', {
         method: 'POST',
@@ -284,29 +357,33 @@ export default function GameRound() {
       <div className={`${styles.container} ${currentStreak >= 3 ? styles.hotStreak : ''}`}>
         {/* Header */}
         <header className={`${styles.header} glass-panel`}>
-          <button onClick={() => router.push('/dashboard')} className={styles.backBtn}>
-            <ChevronLeft size={16} /> Dashboard
+          <button onClick={() => router.push('/dashboard')} className={styles.backBtn} aria-label="Dashboard">
+            <ChevronLeft size={16} />
+            <span className={styles.backBtnText}>Dashboard</span>
           </button>
           
           <div className={styles.headerGroups}>
             {sessionProgress !== null && (
               <div className={styles.sessionBadge}>
-                <span className={styles.sessionLabel}>Session:</span>
+                <span className={styles.sessionLabelText}>Session: </span>
                 <span className={styles.sessionVal}>{sessionProgress}/10</span>
               </div>
             )}
 
             {sessionProgress !== null && currentStreak > 0 && (
               <div className={`${styles.streakBadge} ${currentStreak >= 3 ? styles.hotStreakBadge : ''}`}>
-                <span className={styles.streakLabel}>🔥 Streak:</span>
+                <span>🔥 </span>
+                <span className={styles.streakLabelText}>Streak: </span>
                 <span className={styles.streakVal}>{currentStreak}</span>
               </div>
             )}
             
             {userScore !== null && (
               <div className={styles.scoreGroup}>
-                <span className={styles.scoreLabel}>Total Score:</span>
-                <span className={styles.scoreVal}>{userScore} pts</span>
+                <span>🏆 </span>
+                <span className={styles.scoreLabelText}>Score: </span>
+                <span className={styles.scoreVal}>{userScore}</span>
+                <span className={styles.scorePtsText}> pts</span>
               </div>
             )}
           </div>
@@ -322,32 +399,32 @@ export default function GameRound() {
               : 'Two of these statements are true. One is a lie. Click on the lie!'
             }
           </p>
+          {!showResult && !game.played && (
+            <div>
+              {activeHint ? (
+                <button
+                  onClick={() => setShowHintModal(true)}
+                  className={styles.compactHintBtn}
+                  style={{ borderColor: 'var(--neon-purple)', background: 'rgba(168, 85, 247, 0.15)' }}
+                >
+                  🔮 View Hint Riddle
+                </button>
+              ) : (
+                hintsUsed < 2 && (
+                  <button
+                    onClick={handleRequestHint}
+                    disabled={fetchingHint}
+                    className={styles.compactHintBtn}
+                  >
+                    {fetchingHint ? '🔮 Fetching Hint...' : `🔮 Need a Hint? (${2 - hintsUsed} left)`}
+                  </button>
+                )
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Hint Lifeline Panel */}
-        {!showResult && !game.played && (
-          <div className={styles.hintContainer}>
-            {activeHint ? (
-              <div className={styles.speechBubble}>
-                <p className={styles.riddleText}>{activeHint}</p>
-              </div>
-            ) : (
-              hintsUsed < 2 && (
-                <button
-                  onClick={handleRequestHint}
-                  disabled={fetchingHint}
-                  className={styles.hintBtn}
-                >
-                  {fetchingHint ? (
-                    <>🔮 Fetching Riddle Hint...</>
-                  ) : (
-                    <>🔮 Need a Hint? ({2 - hintsUsed} left)</>
-                  )}
-                </button>
-              )
-            )}
-          </div>
-        )}
+        {/* Hint Lifeline Panel (Removed to prevent vertical layout bloat) */}
 
         {/* Shuffled Fact Cards (hidden once result is shown) */}
         {!showResult && (
@@ -501,6 +578,19 @@ export default function GameRound() {
           </div>
         )}
       </div>
+
+      {/* Hint Modal Overlay */}
+      {showHintModal && activeHint && (
+        <div className={styles.modalOverlay} onClick={() => setShowHintModal(false)}>
+          <div className={`${styles.hintModal} glass-panel`} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.modalTitle}>🔮 The Guide's Riddle</h3>
+            <p className={styles.modalRiddleText}>{activeHint}</p>
+            <button onClick={() => setShowHintModal(false)} className={styles.modalCloseBtn}>
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
     </CityBackground>
   );
 }

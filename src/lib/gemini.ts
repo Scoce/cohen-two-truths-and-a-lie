@@ -283,6 +283,8 @@ Note: The "facts" array MUST contain exactly 3 items. The "lieIndex" MUST corres
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
+        maxOutputTokens: 300,
+        temperature: 0.7,
       },
     });
 

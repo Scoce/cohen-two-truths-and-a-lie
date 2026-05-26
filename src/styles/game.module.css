@@ -410,8 +410,16 @@
     padding: 0.4rem 0.6rem;
   }
 
-  .sessionLabel, .scoreLabel, .streakLabel {
-    font-size: 0.75rem;
+  .backBtnText,
+  .sessionLabelText,
+  .streakLabelText,
+  .scoreLabelText,
+  .scorePtsText {
+    display: none;
+  }
+
+  .backBtn {
+    padding: 0.5rem;
   }
 
   .sessionVal, .scoreVal, .streakVal {
@@ -645,4 +653,117 @@
   text-shadow: 0 0 8px rgba(243, 232, 255, 0.5);
 }
 
+/* Compact Hint button in intro section */
+.compactHintBtn {
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  color: #f3e8ff;
+  padding: 0.45rem 1rem;
+  border-radius: 20px;
+  font-size: 0.825rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
 
+.compactHintBtn:hover:not(:disabled) {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: var(--neon-purple);
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.25);
+  transform: translateY(-1px);
+}
+
+.compactHintBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Modal Overlay & Modal Window for Hints */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 1.5rem;
+  animation: fadeInModal 0.2s ease-out;
+}
+
+@keyframes fadeInModal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.hintModal {
+  max-width: 450px;
+  width: 100%;
+  padding: 2.25rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  background: rgba(15, 10, 25, 0.9) !important;
+  border: 1px solid var(--neon-purple) !important;
+  box-shadow: 0 0 30px rgba(168, 85, 247, 0.35) !important;
+  border-radius: 16px;
+  animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.modalTitle {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--neon-purple);
+  text-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+  margin: 0;
+}
+
+.modalRiddleText {
+  font-size: 1.125rem;
+  line-height: 1.6;
+  font-style: italic;
+  color: #f3e8ff;
+  white-space: pre-line;
+  text-shadow: 0 0 8px rgba(243, 232, 255, 0.4);
+  margin: 0;
+}
+
+.modalCloseBtn {
+  background: linear-gradient(135deg, var(--neon-purple), var(--neon-blue));
+  border: none;
+  padding: 0.6rem 2.25rem;
+  border-radius: 8px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modalCloseBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+}
