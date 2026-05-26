@@ -60,8 +60,9 @@ export async function POST(req: Request) {
     let sessionScore = 0;
     let sessionCompleted = false;
     let updatedTotalScore = 0;
-
-    const pointsEarned = isCorrect ? 20 : 0;
+    let currentStreak = 0;
+    let pointsEarned = 0;
+    let correctCount = 0;
 
     if (game.session_id !== null) {
       // Get current session
@@ -72,18 +73,38 @@ export async function POST(req: Request) {
       
       if (sessionRes.rows.length > 0) {
         const session = sessionRes.rows[0];
+        const oldStreak = session.current_streak || 0;
+
+        if (isCorrect) {
+          currentStreak = oldStreak + 1;
+          pointsEarned = currentStreak >= 3 ? 30 : 20;
+        } else {
+          currentStreak = 0;
+          pointsEarned = 0;
+        }
+
         sessionProgress = session.question_count;
         sessionScore = session.score + pointsEarned;
         sessionCompleted = sessionProgress >= 10;
 
         const newCategory = session.category === game.category ? session.category : 'Mixed';
 
-        // Save updated session state including potentially updated category
+        // Save updated session state including potentially updated category and streak
         await query(
-          'UPDATE sessions SET score = $1, completed = $2, category = $3 WHERE id = $4',
-          [sessionScore, sessionCompleted, newCategory, game.session_id]
+          'UPDATE sessions SET score = $1, completed = $2, current_streak = $3, category = $4 WHERE id = $5',
+          [sessionScore, sessionCompleted, currentStreak, newCategory, game.session_id]
         );
       }
+
+      // Count correct answers in the session
+      const correctRes = await query(
+        'SELECT COUNT(*) as correct_count FROM games WHERE session_id = $1 AND is_correct = TRUE',
+        [game.session_id]
+      );
+      correctCount = parseInt(correctRes.rows[0]?.correct_count || '0', 10);
+    } else {
+      pointsEarned = isCorrect ? 20 : 0;
+      correctCount = isCorrect ? 1 : 0;
     }
 
     // Update user's total score in the database
@@ -109,6 +130,10 @@ export async function POST(req: Request) {
       sessionScore,
       sessionCompleted,
       updatedScore: updatedTotalScore,
+      currentStreak,
+      current_streak: currentStreak,
+      pointsEarned,
+      correctCount,
     });
   } catch (error) {
     console.error('[game-submit] Error:', error);

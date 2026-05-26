@@ -73,9 +73,19 @@ async function run() {
         question_count INT DEFAULT 0,
         score INT DEFAULT 0,
         completed BOOLEAN DEFAULT FALSE,
+        hints_used INT DEFAULT 0,
+        current_streak INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // Ensure sessions columns exist
+    try {
+      await pool.query('ALTER TABLE sessions ADD COLUMN IF NOT EXISTS hints_used INT DEFAULT 0;');
+      await pool.query('ALTER TABLE sessions ADD COLUMN IF NOT EXISTS current_streak INT DEFAULT 0;');
+    } catch (migErr) {
+      // Ignore
+    }
 
     // 3. Create Games Table
     console.log('[init-db] Creating "games" table...');

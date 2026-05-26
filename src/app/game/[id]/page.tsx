@@ -43,6 +43,40 @@ export default function GameRound() {
   const [submittingLeaderboard, setSubmittingLeaderboard] = useState(false);
   const [leaderboardSubmitted, setLeaderboardSubmitted] = useState(false);
 
+  // Hints & Streaks
+  const [hintsUsed, setHintsUsed] = useState(0);
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [activeHint, setActiveHint] = useState('');
+  const [fetchingHint, setFetchingHint] = useState(false);
+  const [pointsEarned, setPointsEarned] = useState<number | null>(null);
+
+  const handleRequestHint = async () => {
+    if (!game || game.played || fetchingHint || hintsUsed >= 2) return;
+
+    setFetchingHint(true);
+    try {
+      const res = await fetch('/api/game/hint', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameId: game.gameId }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to fetch hint');
+      }
+
+      const result = await res.json();
+      setActiveHint(result.hint);
+      setHintsUsed(result.hintsUsed);
+    } catch (err) {
+      console.error(err);
+      alert('Error fetching hint. Please try again.');
+    } finally {
+      setFetchingHint(false);
+    }
+  };
+
   // 1. Fetch game details and current user score on mount
   useEffect(() => {
     if (!gameId) return;
@@ -68,6 +102,12 @@ export default function GameRound() {
           setSessionScore(gameData.sessionScore);
           setSessionCompleted(gameData.sessionCompleted);
           setSessionId(gameData.sessionId);
+          setHintsUsed(gameData.hintsUsed || 0);
+          setCurrentStreak(gameData.currentStreak || 0);
+          setCorrectCount(gameData.correctCount || 0);
+          if (gameData.played) {
+            setPointsEarned(gameData.isCorrect ? (gameData.currentStreak >= 3 ? 30 : 20) : 0);
+          }
         }
 
         // Fetch user stats for header
@@ -122,6 +162,9 @@ export default function GameRound() {
       setSessionProgress(result.sessionProgress);
       setSessionScore(result.sessionScore);
       setSessionCompleted(result.sessionCompleted);
+      setCurrentStreak(result.currentStreak || 0);
+      setPointsEarned(result.pointsEarned !== undefined ? result.pointsEarned : (result.isCorrect ? 20 : 0));
+      setCorrectCount(result.correctCount || 0);
 
       // Update header score
       setUserScore(result.updatedScore);
@@ -237,7 +280,8 @@ export default function GameRound() {
 
   return (
     <CityBackground>
-      <div className={styles.container}>
+      {currentStreak >= 3 && <div className={styles.hotStreakBorder} />}
+      <div className={`${styles.container} ${currentStreak >= 3 ? styles.hotStreak : ''}`}>
         {/* Header */}
         <header className={`${styles.header} glass-panel`}>
           <button onClick={() => router.push('/dashboard')} className={styles.backBtn}>
@@ -249,6 +293,13 @@ export default function GameRound() {
               <div className={styles.sessionBadge}>
                 <span className={styles.sessionLabel}>Session:</span>
                 <span className={styles.sessionVal}>{sessionProgress}/10</span>
+              </div>
+            )}
+
+            {sessionProgress !== null && currentStreak > 0 && (
+              <div className={`${styles.streakBadge} ${currentStreak >= 3 ? styles.hotStreakBadge : ''}`}>
+                <span className={styles.streakLabel}>🔥 Streak:</span>
+                <span className={styles.streakVal}>{currentStreak}</span>
               </div>
             )}
             
@@ -272,6 +323,31 @@ export default function GameRound() {
             }
           </p>
         </div>
+
+        {/* Hint Lifeline Panel */}
+        {!showResult && !game.played && (
+          <div className={styles.hintContainer}>
+            {activeHint ? (
+              <div className={styles.speechBubble}>
+                <p className={styles.riddleText}>{activeHint}</p>
+              </div>
+            ) : (
+              hintsUsed < 2 && (
+                <button
+                  onClick={handleRequestHint}
+                  disabled={fetchingHint}
+                  className={styles.hintBtn}
+                >
+                  {fetchingHint ? (
+                    <>🔮 Fetching Riddle Hint...</>
+                  ) : (
+                    <>🔮 Need a Hint? ({2 - hintsUsed} left)</>
+                  )}
+                </button>
+              )
+            )}
+          </div>
+        )}
 
         {/* Shuffled Fact Cards (hidden once result is shown) */}
         {!showResult && (
@@ -334,7 +410,9 @@ export default function GameRound() {
             
             <p className={styles.resultText}>
               {game.isCorrect 
-                ? `Great job! You found the lie about ${game.persona} and earned +20 points!`
+                ? (pointsEarned === 30 
+                    ? `🔥 Streak Multiplier Active! You found the lie about ${game.persona} and earned +30 points!` 
+                    : `Great job! You found the lie about ${game.persona} and earned +20 points!`)
                 : `Nice try, but that statement is actually true! That was a fact about ${game.persona}.`
               }
             </p>
@@ -364,15 +442,24 @@ export default function GameRound() {
             </h2>
             
             <p className={styles.resultText}>
+              {game.isCorrect 
+                ? (pointsEarned === 30 
+                    ? `🔥 Streak Multiplier Active! You found the lie about ${game.persona} and earned +30 points!` 
+                    : `Great job! You found the lie about ${game.persona} and earned +20 points!`)
+                : `Nice try, but that statement is actually true! That was a fact about ${game.persona}.`
+              }
+            </p>
+            
+            <p className={styles.resultText} style={{ marginTop: '0.5rem' }}>
               Fantastic! You finished all 10 rounds in the <strong>{game.category}</strong> category!
             </p>
 
             <div style={{ margin: '1rem 0', display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center' }}>
               <div style={{ fontSize: '1.25rem', color: 'var(--text-primary)' }}>
-                Session Score: <strong style={{ color: 'var(--neon-purple)', fontSize: '1.5rem', textShadow: '0 0 10px var(--neon-purple-glow)' }}>{sessionScore} / 200 pts</strong>
+                Session Score: <strong style={{ color: 'var(--neon-purple)', fontSize: '1.5rem', textShadow: '0 0 10px var(--neon-purple-glow)' }}>{sessionScore} pts</strong>
               </div>
               <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                Correct answers: <strong>{sessionScore ? sessionScore / 20 : 0} / 10</strong>
+                Correct answers: <strong>{correctCount} / 10</strong>
               </div>
             </div>
 

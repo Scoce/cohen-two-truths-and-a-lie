@@ -45,6 +45,9 @@ export async function GET(
     let sessionProgress = 1;
     let sessionScore = 0;
     let sessionCompleted = false;
+    let hintsUsed = 0;
+    let currentStreak = 0;
+    let correctCount = 0;
     const sessionId = game.session_id;
 
     if (game.session_id !== null) {
@@ -57,7 +60,16 @@ export async function GET(
         sessionProgress = session.question_count;
         sessionScore = session.score;
         sessionCompleted = session.completed;
+        hintsUsed = session.hints_used || 0;
+        currentStreak = session.current_streak || 0;
       }
+
+      // Count correct answers in the session
+      const correctRes = await query(
+        'SELECT COUNT(*) as correct_count FROM games WHERE session_id = $1 AND is_correct = TRUE',
+        [game.session_id]
+      );
+      correctCount = parseInt(correctRes.rows[0]?.correct_count || '0', 10);
     }
 
     // 3. If already played, return the results
@@ -74,7 +86,10 @@ export async function GET(
         sessionProgress,
         sessionScore,
         sessionCompleted,
-        sessionId
+        sessionId,
+        hintsUsed,
+        currentStreak,
+        correctCount
       });
     }
 
@@ -88,7 +103,10 @@ export async function GET(
       sessionProgress,
       sessionScore,
       sessionCompleted,
-      sessionId
+      sessionId,
+      hintsUsed,
+      currentStreak,
+      correctCount
     });
   } catch (error) {
     console.error('[game-get-api] Error:', error);

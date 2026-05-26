@@ -40,6 +40,8 @@ interface MockSession {
   question_count: number;
   score: number;
   completed: boolean;
+  hints_used: number;
+  current_streak: number;
   created_at: Date;
 }
 
@@ -124,9 +126,19 @@ async function ensureTables() {
         question_count INT DEFAULT 0,
         score INT DEFAULT 0,
         completed BOOLEAN DEFAULT FALSE,
+        hints_used INT DEFAULT 0,
+        current_streak INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // Ensure sessions columns exist
+    try {
+      await pool.query('ALTER TABLE sessions ADD COLUMN IF NOT EXISTS hints_used INT DEFAULT 0;');
+      await pool.query('ALTER TABLE sessions ADD COLUMN IF NOT EXISTS current_streak INT DEFAULT 0;');
+    } catch (migErr) {
+      // Ignore
+    }
 
     // 3. Create Games Table
     await pool.query(`
@@ -309,6 +321,8 @@ export const query = async (text: string, params: any[] = []) => {
       question_count: question_count || 0,
       score: score || 0,
       completed: completed || false,
+      hints_used: 0,
+      current_streak: 0,
       created_at: new Date(),
     };
     mockSessions.push(newSession);
@@ -320,9 +334,17 @@ export const query = async (text: string, params: any[] = []) => {
     const id = params[params.length - 1];
     const session = mockSessions.find((s) => s.id === id);
     if (session) {
-      if (queryNormalized.includes('question_count =')) {
+      if (queryNormalized.includes('hints_used = hints_used + 1')) {
+        session.hints_used += 1;
+      } else if (queryNormalized.includes('question_count =')) {
         const [question_count] = params;
         session.question_count = question_count;
+      } else if (queryNormalized.includes('score =') && queryNormalized.includes('current_streak =') && queryNormalized.includes('category =')) {
+        const [score, completed, current_streak, category] = params;
+        session.score = score;
+        session.completed = completed;
+        session.current_streak = current_streak;
+        session.category = category;
       } else if (queryNormalized.includes('score =') && queryNormalized.includes('completed =') && queryNormalized.includes('category =')) {
         const [score, completed, category] = params;
         session.score = score;
@@ -367,6 +389,13 @@ export const query = async (text: string, params: any[] = []) => {
     const [id, user_id] = params;
     const game = mockGames.find((g) => g.id === id && g.user_id === user_id);
     return { rows: game ? [game] : [], rowCount: game ? 1 : 0 };
+  }
+
+  // SELECT COUNT(*) as correct_count FROM games WHERE session_id = $1 AND is_correct = TRUE
+  if (queryNormalized.includes('COUNT(*)') && queryNormalized.includes('FROM games WHERE session_id =')) {
+    const session_id = params[0];
+    const correctCount = mockGames.filter((g) => g.session_id === session_id && g.is_correct === true).length;
+    return { rows: [{ correct_count: correctCount }], rowCount: 1 };
   }
 
   // UPDATE games SET guessed_index = $1, is_correct = $2 WHERE id = $3
