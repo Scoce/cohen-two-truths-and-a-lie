@@ -71,6 +71,18 @@ interface MockLeaderboard {
   created_at: Date;
 }
 
+interface MockTriviaPool {
+  id: number;
+  category: string;
+  age_group: string;
+  persona: string;
+  fact_1: string;
+  fact_2: string;
+  fact_3: string;
+  lie_index: number;
+  created_at: Date;
+}
+
 // Seed the default test user with age 8 for kid-friendly testing
 const defaultTestUserPasswordHash = bcrypt.hashSync('password123', 10);
 
@@ -88,6 +100,7 @@ const mockUsers: MockUser[] = [
 const mockSessions: MockSession[] = [];
 const mockGames: MockGame[] = [];
 const mockLeaderboards: MockLeaderboard[] = [];
+const mockTriviaPool: MockTriviaPool[] = [];
 
 let dbInitialized = false;
 let dbInitializing = false;
@@ -185,6 +198,21 @@ async function ensureTables() {
     } catch (migErr) {
       // Ignore
     }
+
+    // 5. Create Trivia Pool Table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS trivia_pool (
+        id SERIAL PRIMARY KEY,
+        category VARCHAR(50) NOT NULL,
+        age_group VARCHAR(20) NOT NULL,
+        persona VARCHAR(100) NOT NULL,
+        fact_1 TEXT NOT NULL,
+        fact_2 TEXT NOT NULL,
+        fact_3 TEXT NOT NULL,
+        lie_index INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
 
     // Ensure default test user exists
     const userCheck = await pool.query("SELECT id FROM users WHERE username = 'testuser'");
@@ -442,6 +470,69 @@ export const query = async (text: string, params: any[] = []) => {
       .sort((a, b) => b.score - a.score || a.created_at.getTime() - b.created_at.getTime())
       .slice(0, 10);
     return { rows: filtered, rowCount: filtered.length };
+  }
+
+  // SELECT * FROM trivia_pool WHERE category = $1 AND age_group = $2 AND persona NOT IN ...
+  if (queryNormalized.includes('FROM trivia_pool') && queryNormalized.includes('category =') && queryNormalized.includes('persona NOT IN')) {
+    const [category, age_group, user_id] = params;
+    
+    // Get personas already played by user
+    const playedPersonas = mockGames
+      .filter((g) => g.user_id === user_id)
+      .map((g) => g.persona.toLowerCase().trim());
+      
+    // Find eligible questions in the pool
+    const eligible = mockTriviaPool.filter((t) => 
+      t.category.toLowerCase().trim() === category.toLowerCase().trim() &&
+      t.age_group.toLowerCase().trim() === age_group.toLowerCase().trim() &&
+      !playedPersonas.includes(t.persona.toLowerCase().trim())
+    );
+    
+    if (eligible.length === 0) {
+      return { rows: [], rowCount: 0 };
+    }
+    
+    // Return random matching row
+    const randIdx = Math.floor(Math.random() * eligible.length);
+    return { rows: [eligible[randIdx]], rowCount: 1 };
+  }
+
+  // SELECT * FROM trivia_pool (for grouping/counting)
+  if (queryNormalized.includes('SELECT * FROM trivia_pool') && !queryNormalized.includes('WHERE')) {
+    return { rows: [...mockTriviaPool], rowCount: mockTriviaPool.length };
+  }
+
+  // INSERT INTO trivia_pool
+  if (queryNormalized.includes('INSERT INTO trivia_pool')) {
+    const [category, age_group, persona, fact_1, fact_2, fact_3, lie_index] = params;
+    const newRecord: MockTriviaPool = {
+      id: mockTriviaPool.length + 1,
+      category,
+      age_group,
+      persona,
+      fact_1,
+      fact_2,
+      fact_3,
+      lie_index: parseInt(lie_index, 10),
+      created_at: new Date(),
+    };
+    mockTriviaPool.push(newRecord);
+    return { rows: [newRecord], rowCount: 1 };
+  }
+
+  // DELETE FROM trivia_pool
+  if (queryNormalized.includes('DELETE FROM trivia_pool')) {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const initialLength = mockTriviaPool.length;
+    const remaining = mockTriviaPool.filter((t) => t.created_at >= thirtyDaysAgo);
+    
+    mockTriviaPool.length = 0;
+    mockTriviaPool.push(...remaining);
+    
+    const deletedCount = initialLength - remaining.length;
+    return { rows: [], rowCount: deletedCount };
   }
 
   console.warn('[db] Unhandled query in in-memory simulator:', queryNormalized);

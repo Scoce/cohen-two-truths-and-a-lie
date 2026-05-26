@@ -70,17 +70,66 @@ export async function POST(req: Request) {
     const userRes = await query('SELECT age FROM users WHERE id = $1', [sessionUser.userId]);
     const age = userRes.rows.length > 0 ? userRes.rows[0].age : 10;
 
-    // 5. Query user's recently played personas in this category/session to prevent repeats
-    const recentRes = await query(
-      `SELECT persona FROM games 
-       WHERE user_id = $1 AND (session_id = $2 OR category = $3) 
-       ORDER BY id DESC LIMIT 15`,
-      [sessionUser.userId, sessionId, category]
-    );
-    const excludePersonas = Array.from(new Set(recentRes.rows.map((row) => row.persona))).slice(0, 5);
+    let ageGroup = 'Kids';
+    if (age >= 18) {
+      ageGroup = 'Adults';
+    } else if (age >= 12) {
+      ageGroup = 'Teens';
+    }
 
-    // 6. Generate truths and lies (now passing age and exclusions list)
-    const { persona, facts: originalFacts, lieIndex: originalLieIndex } = await generateTwoTruthsAndALie(category, age, excludePersonas);
+    let persona = '';
+    let originalFacts: string[] = [];
+    let originalLieIndex = 0;
+
+    // Check if there is an unplayed question in trivia_pool for this user/category/ageGroup
+    const cachedTriviaRes = await query(
+      `SELECT * FROM trivia_pool 
+       WHERE category = $1 AND age_group = $2
+       AND persona NOT IN (
+         SELECT persona FROM games WHERE user_id = $3
+       )
+       ORDER BY RANDOM() LIMIT 1`,
+      [category, ageGroup, sessionUser.userId]
+    );
+
+    if (cachedTriviaRes.rows.length > 0) {
+      const cachedTrivia = cachedTriviaRes.rows[0];
+      console.log(`[game-generate] Cache HIT! Using cached trivia for "${cachedTrivia.persona}"`);
+      persona = cachedTrivia.persona;
+      originalFacts = [cachedTrivia.fact_1, cachedTrivia.fact_2, cachedTrivia.fact_3];
+      originalLieIndex = cachedTrivia.lie_index;
+    } else {
+      console.log(`[game-generate] Cache MISS! Generating fresh trivia using Gemini...`);
+      // 5. Query user's recently played personas in this category/session to prevent repeats
+      const recentRes = await query(
+        `SELECT persona FROM games 
+         WHERE user_id = $1 AND (session_id = $2 OR category = $3) 
+         ORDER BY id DESC LIMIT 15`,
+        [sessionUser.userId, sessionId, category]
+      );
+      const excludePersonas = Array.from(new Set(recentRes.rows.map((row) => row.persona))).slice(0, 5);
+
+      // 6. Generate truths and lies (now passing age and exclusions list)
+      const trivia = await generateTwoTruthsAndALie(category, age, excludePersonas);
+      persona = trivia.persona;
+      originalFacts = trivia.facts;
+      originalLieIndex = trivia.lieIndex;
+
+      // Save to pool for future cache hits
+      await query(
+        `INSERT INTO trivia_pool (category, age_group, persona, fact_1, fact_2, fact_3, lie_index)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          category,
+          ageGroup,
+          persona,
+          originalFacts[0],
+          originalFacts[1],
+          originalFacts[2],
+          originalLieIndex,
+        ]
+      );
+    }
 
     // 7. Shuffle facts and track where the lie ends up
     const items = originalFacts.map((fact, index) => ({

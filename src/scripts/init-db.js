@@ -135,7 +135,23 @@ async function run() {
       // Ignore
     }
 
-    // 5. Seed Test User
+    // 5. Create Trivia Pool Table
+    console.log('[init-db] Creating "trivia_pool" table...');
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS trivia_pool (
+        id SERIAL PRIMARY KEY,
+        category VARCHAR(50) NOT NULL,
+        age_group VARCHAR(20) NOT NULL,
+        persona VARCHAR(100) NOT NULL,
+        fact_1 TEXT NOT NULL,
+        fact_2 TEXT NOT NULL,
+        fact_3 TEXT NOT NULL,
+        lie_index INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 6. Seed Test User
     const testUsername = 'testuser';
     const testPassword = 'password123';
     console.log(`[init-db] Checking if test user "${testUsername}" exists...`);
