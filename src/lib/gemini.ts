@@ -1127,7 +1127,8 @@ const ADULT_MOCK_QUESTIONS: Record<string, GameQuestion[]> = {
 export async function generateTwoTruthsAndALie(
   category: string, 
   age: number = 10,
-  excludePersonas: string[] = []
+  excludePersonas: string[] = [],
+  difficulty: string = 'Medium'
 ): Promise<GameQuestion> {
   const normCategory = category.toLowerCase().trim();
   const mockDatabase = age < 12 ? KIDS_MOCK_QUESTIONS : ADULT_MOCK_QUESTIONS;
@@ -1136,15 +1137,25 @@ export async function generateTwoTruthsAndALie(
   if (!aiClient) {
     const questions = mockDatabase[categoryKey];
     // Filter questions to exclude recently played personas
-    let filteredQuestions = questions.filter(
+    const filteredQuestions = questions.filter(
       q => !excludePersonas.some(ep => ep.toLowerCase().trim() === q.persona.toLowerCase().trim())
     );
-    // If all are filtered (e.g. mock list is exhausted), fall back to original set
-    if (filteredQuestions.length === 0) {
-      filteredQuestions = questions;
+
+    // easy = indices 0-3, medium = indices 4-7, hard = indices 8-11
+    let difficultyFiltered = filteredQuestions;
+    if (difficulty === 'Easy') {
+      difficultyFiltered = filteredQuestions.slice(0, 4);
+    } else if (difficulty === 'Medium') {
+      difficultyFiltered = filteredQuestions.slice(4, 8);
+    } else if (difficulty === 'Hard') {
+      difficultyFiltered = filteredQuestions.slice(8, 12);
     }
-    const randomIndex = Math.floor(Math.random() * filteredQuestions.length);
-    return filteredQuestions[randomIndex];
+
+    if (difficultyFiltered.length === 0) {
+      difficultyFiltered = filteredQuestions.length > 0 ? filteredQuestions : questions;
+    }
+    const randomIndex = Math.floor(Math.random() * difficultyFiltered.length);
+    return difficultyFiltered[randomIndex];
   }
 
   try {
@@ -1158,13 +1169,24 @@ export async function generateTwoTruthsAndALie(
       ageGuidelines = `Target Audience: Adults (18+). Choose famous historical figures, scientists, actors, musicians, and sports champions. Make the statements tricky, challenging, and detailed. CRITICAL: The lie must be an extremely subtle, factually incorrect detail embedded in a completely authentic-sounding sentence (e.g., swapping a release year by 1-2 years, substituting a runner-up award for a win, or attributing a minor achievement to the wrong team or person).`;
     }
 
+    // Customize guidelines based on difficulty settings
+    let difficultyGuidelines = '';
+    if (difficulty === 'Easy') {
+      difficultyGuidelines = `Difficulty Setting: EASY. The truths should be very well-known facts. The lie must be a highly obvious or fun mismatch or a clear giveaway (for example, saying a soccer player plays professional hockey, or an astronaut built a wooden ladder to touch the stars). Keep it lighthearted and easy to identify.`;
+    } else if (difficulty === 'Hard') {
+      difficultyGuidelines = `Difficulty Setting: HARD. The truths should be lesser-known, obscure, or highly specific facts. The lie must be extremely subtle, clever, and tricky, with no obvious giveaways. It should be a minor factual error embedded in an otherwise completely accurate, authentic-sounding sentence (e.g., swapping a championship year by just 1 year, replacing a gold medal with a silver medal, or claiming they won a Grammy/Oscar when they were only nominated).`;
+    } else {
+      difficultyGuidelines = `Difficulty Setting: MEDIUM. The truths are standard facts. The lie is moderately tricky but reasonable to figure out (e.g., swapping a middle name, a minor location detail, or general dates).`;
+    }
+
     const excludePrompt = excludePersonas.length > 0
       ? `\nCRITICAL: Do NOT choose any of the following people or characters: ${excludePersonas.join(', ')}. You MUST choose a different person or character.`
       : '';
 
     const prompt = `You are an expert trivia assistant. Generate a "Two Truths and a Lie" round about a famous person or fictional character in the "${normCategory}" category.
 
-${ageGuidelines}${excludePrompt}
+${ageGuidelines}
+${difficultyGuidelines}${excludePrompt}
 
 Return the result as a raw JSON object with the following structure:
 {
@@ -1208,13 +1230,23 @@ Note: The "facts" array MUST contain exactly 3 items. The "lieIndex" MUST corres
   } catch (error) {
     console.error(`[gemini] Error calling Gemini API (age: ${age}), falling back to mock:`, error);
     const questions = mockDatabase[categoryKey];
-    let filteredQuestions = questions.filter(
+    const filteredQuestions = questions.filter(
       q => !excludePersonas.some(ep => ep.toLowerCase().trim() === q.persona.toLowerCase().trim())
     );
-    if (filteredQuestions.length === 0) {
-      filteredQuestions = questions;
+
+    let difficultyFiltered = filteredQuestions;
+    if (difficulty === 'Easy') {
+      difficultyFiltered = filteredQuestions.slice(0, 4);
+    } else if (difficulty === 'Medium') {
+      difficultyFiltered = filteredQuestions.slice(4, 8);
+    } else if (difficulty === 'Hard') {
+      difficultyFiltered = filteredQuestions.slice(8, 12);
     }
-    const randomIndex = Math.floor(Math.random() * filteredQuestions.length);
-    return filteredQuestions[randomIndex];
+
+    if (difficultyFiltered.length === 0) {
+      difficultyFiltered = filteredQuestions.length > 0 ? filteredQuestions : questions;
+    }
+    const randomIndex = Math.floor(Math.random() * difficultyFiltered.length);
+    return difficultyFiltered[randomIndex];
   }
 }

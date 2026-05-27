@@ -14,9 +14,10 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2. Parse category from body
+    // 2. Parse category and difficulty from body
     const body = await req.json().catch(() => ({}));
     const category = body.category || 'sports';
+    let difficulty = body.difficulty || 'Medium';
 
     // 3. Check for an active, uncompleted game session for this user (cross-category)
     const activeSessionRes = await query(
@@ -35,14 +36,15 @@ export async function POST(req: Request) {
       sessionId = activeSession.id;
       currentQuestionCount = activeSession.question_count;
       currentSessionScore = activeSession.score;
+      difficulty = activeSession.difficulty || 'Medium'; // Use difficulty from existing session
       
       // If the session somehow exceeded 10 questions, mark it completed and create a new one
       if (currentQuestionCount >= 10) {
         await query('UPDATE sessions SET completed = TRUE WHERE id = $1', [sessionId]);
         const newSessionRes = await query(
-          `INSERT INTO sessions (user_id, category, score, question_count, completed) 
-           VALUES ($1, $2, 0, 0, FALSE) RETURNING id`,
-          [sessionUser.userId, category]
+          `INSERT INTO sessions (user_id, category, score, question_count, completed, difficulty) 
+           VALUES ($1, $2, 0, 0, FALSE, $3) RETURNING id`,
+          [sessionUser.userId, category, difficulty]
         );
         sessionId = newSessionRes.rows[0].id;
         currentQuestionCount = 0;
@@ -50,11 +52,11 @@ export async function POST(req: Request) {
       }
     } else {
       // Create a new session
-      console.log(`[game-generate] Starting new 10-question session in category "${category}"...`);
+      console.log(`[game-generate] Starting new 10-question session in category "${category}" with difficulty "${difficulty}"...`);
       const newSessionRes = await query(
-        `INSERT INTO sessions (user_id, category, score, question_count, completed) 
-         VALUES ($1, $2, 0, 0, FALSE) RETURNING id`,
-        [sessionUser.userId, category]
+        `INSERT INTO sessions (user_id, category, score, question_count, completed, difficulty) 
+         VALUES ($1, $2, 0, 0, FALSE, $3) RETURNING id`,
+        [sessionUser.userId, category, difficulty]
       );
       sessionId = newSessionRes.rows[0].id;
     }
@@ -90,10 +92,10 @@ export async function POST(req: Request) {
     );
     const playedPersonasThisMonth = playedRes.rows.map((row) => row.persona);
 
-    // Query all questions currently in trivia_pool for this category/ageGroup
+    // Query all questions currently in trivia_pool for this category/ageGroup and difficulty
     const poolRes = await query(
-      `SELECT * FROM trivia_pool WHERE category = $1 AND age_group = $2`,
-      [category, ageGroup]
+      `SELECT * FROM trivia_pool WHERE category = $1 AND age_group = $2 AND difficulty = $3`,
+      [category, ageGroup, difficulty]
     );
     const poolQuestions = poolRes.rows;
 
@@ -118,14 +120,14 @@ export async function POST(req: Request) {
           ])
         );
 
-        const trivia = await generateTwoTruthsAndALie(category, age, allExcludedPersonas);
+        const trivia = await generateTwoTruthsAndALie(category, age, allExcludedPersonas, difficulty);
         
         console.log(`[game-generate] Pre-pulled new persona: "${trivia.persona}". Adding to trivia_pool cache for other users.`);
         
         // Save to cache pool
         const insertRes = await query(
-          `INSERT INTO trivia_pool (category, age_group, persona, fact_1, fact_2, fact_3, lie_index)
-           VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+          `INSERT INTO trivia_pool (category, age_group, persona, fact_1, fact_2, fact_3, lie_index, difficulty)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
           [
             category,
             ageGroup,
@@ -133,7 +135,8 @@ export async function POST(req: Request) {
             trivia.facts[0],
             trivia.facts[1],
             trivia.facts[2],
-            trivia.lieIndex
+            trivia.lieIndex,
+            difficulty
           ]
         );
 
@@ -156,15 +159,15 @@ export async function POST(req: Request) {
     } else {
       // Emergency fallback (this should only happen if Gemini pre-pull failed and cache was empty)
       console.log(`[game-generate] Cache pool empty. Emergency generating...`);
-      const trivia = await generateTwoTruthsAndALie(category, age, playedPersonasThisMonth);
+      const trivia = await generateTwoTruthsAndALie(category, age, playedPersonasThisMonth, difficulty);
       persona = trivia.persona;
       originalFacts = trivia.facts;
       originalLieIndex = trivia.lieIndex;
       
       // Save it to pool
       await query(
-        `INSERT INTO trivia_pool (category, age_group, persona, fact_1, fact_2, fact_3, lie_index)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        `INSERT INTO trivia_pool (category, age_group, persona, fact_1, fact_2, fact_3, lie_index, difficulty)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
         [
           category,
           ageGroup,
@@ -172,7 +175,8 @@ export async function POST(req: Request) {
           originalFacts[0],
           originalFacts[1],
           originalFacts[2],
-          originalLieIndex
+          originalLieIndex,
+          difficulty
         ]
       );
     }
@@ -195,8 +199,8 @@ export async function POST(req: Request) {
     // 8. Store the game state in Neon Postgres linked to the session
     console.log(`[game-generate] Saving game round to database for session ID ${sessionId}...`);
     const dbRes = await query(
-      `INSERT INTO games (user_id, persona, category, fact_1, fact_2, fact_3, lie_index, session_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO games (user_id, persona, category, fact_1, fact_2, fact_3, lie_index, session_id, difficulty)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING id`,
       [
         sessionUser.userId,
@@ -207,6 +211,7 @@ export async function POST(req: Request) {
         shuffledFacts[2],
         newLieIndex,
         sessionId,
+        difficulty,
       ]
     );
 
@@ -220,7 +225,8 @@ export async function POST(req: Request) {
       facts: shuffledFacts,
       sessionProgress: currentQuestionCount,
       sessionScore: currentSessionScore,
-      sessionId
+      sessionId,
+      difficulty
     });
   } catch (error) {
     console.error('[game-generate] Error:', error);

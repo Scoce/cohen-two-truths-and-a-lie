@@ -31,6 +31,16 @@ interface LeaderboardEntry {
   createdAt: string;
 }
 
+interface Achievement {
+  key: string;
+  name: string;
+  description: string;
+  icon: string;
+  badgeColor: string;
+  unlocked: boolean;
+  unlockedAt: string | null;
+}
+
 export default function Dashboard() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -42,8 +52,26 @@ export default function Dashboard() {
   // Modal states
   const [showLeaderboardModal, setShowLeaderboardModal] = useState(false);
   const [activeLeaderboardTab, setActiveLeaderboardTab] = useState<'Children' | 'Teens' | 'Adults'>('Adults');
-  const [achievements, setAchievements] = useState<any[]>([]);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [showAchievementsModal, setShowAchievementsModal] = useState(false);
+
+  const [difficulty, setDifficulty] = useState<string>('Medium');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('trivia_difficulty');
+      if (saved) {
+        setTimeout(() => {
+          setDifficulty(saved);
+        }, 0);
+      }
+    }
+  }, []);
+
+  const handleDifficultyChange = (newDifficulty: string) => {
+    setDifficulty(newDifficulty);
+    localStorage.setItem('trivia_difficulty', newDifficulty);
+  };
 
   useEffect(() => {
     async function fetchUserAndLeaderboard() {
@@ -135,7 +163,7 @@ export default function Dashboard() {
       const response = await fetch('/api/game/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ category: categoryId }),
+        body: JSON.stringify({ category: categoryId, difficulty }),
       });
 
       if (!response.ok) {
@@ -254,6 +282,19 @@ export default function Dashboard() {
                   <option value="25">Adults (18+)</option>
                 </select>
               </div>
+              <div className={styles.ageSelectorGroup}>
+                <span className={styles.ageLabel}>Difficulty:</span>
+                <select
+                  value={difficulty}
+                  onChange={(e) => handleDifficultyChange(e.target.value)}
+                  className={styles.ageSelect}
+                  aria-label="Change difficulty"
+                >
+                  <option value="Easy">Easy</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Hard">Hard</option>
+                </select>
+              </div>
               <button 
                 onClick={() => setShowLeaderboardModal(true)} 
                 className={styles.leaderboardLink}
@@ -297,10 +338,9 @@ export default function Dashboard() {
               key={cat.id}
               className={`${styles.categoryCard} glass-panel`}
               style={{
-                // Custom properties passed down to CSS
-                ['--card-color' as any]: cat.color,
-                ['--card-color-glow' as any]: cat.glowColor,
-              }}
+                '--card-color': cat.color,
+                '--card-color-glow': cat.glowColor,
+              } as React.CSSProperties}
               onClick={() => handleSelectCategory(cat.id, cat.name)}
             >
               <div className={styles.iconWrapper}>{cat.icon}</div>
@@ -434,8 +474,8 @@ export default function Dashboard() {
                     key={ach.key} 
                     className={`${styles.achievementCard} ${ach.unlocked ? '' : styles.achievementCardLocked}`}
                     style={{
-                      ['--ach-color' as any]: ach.badgeColor,
-                    }}
+                      '--ach-color': ach.badgeColor,
+                    } as React.CSSProperties}
                   >
                     <div className={styles.achievementIcon}>{ach.icon}</div>
                     <div className={styles.achievementInfo}>

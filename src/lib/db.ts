@@ -42,6 +42,7 @@ interface MockSession {
   completed: boolean;
   hints_used: number;
   current_streak: number;
+  difficulty: string;
   created_at: Date;
 }
 
@@ -57,6 +58,7 @@ interface MockGame {
   guessed_index: number | null;
   is_correct: boolean | null;
   session_id: number | null;
+  difficulty: string;
   created_at: Date;
 }
 
@@ -80,6 +82,7 @@ interface MockTriviaPool {
   fact_2: string;
   fact_3: string;
   lie_index: number;
+  difficulty: string;
   created_at: Date;
 }
 
@@ -134,7 +137,7 @@ async function ensureTables() {
     // Ensure age column exists
     try {
       await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS age INT DEFAULT 10;');
-    } catch (migErr) {
+    } catch {
       // Ignore
     }
 
@@ -149,6 +152,7 @@ async function ensureTables() {
         completed BOOLEAN DEFAULT FALSE,
         hints_used INT DEFAULT 0,
         current_streak INT DEFAULT 0,
+        difficulty VARCHAR(20) DEFAULT 'Medium',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -157,7 +161,7 @@ async function ensureTables() {
     try {
       await pool.query('ALTER TABLE sessions ADD COLUMN IF NOT EXISTS hints_used INT DEFAULT 0;');
       await pool.query('ALTER TABLE sessions ADD COLUMN IF NOT EXISTS current_streak INT DEFAULT 0;');
-    } catch (migErr) {
+    } catch {
       // Ignore
     }
 
@@ -175,6 +179,7 @@ async function ensureTables() {
         guessed_index INT,
         is_correct BOOLEAN,
         session_id INT,
+        difficulty VARCHAR(20) DEFAULT 'Medium',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -182,7 +187,7 @@ async function ensureTables() {
     // Ensure session_id column exists
     try {
       await pool.query('ALTER TABLE games ADD COLUMN IF NOT EXISTS session_id INT REFERENCES sessions(id) ON DELETE SET NULL;');
-    } catch (migErr) {
+    } catch {
       // Ignore
     }
 
@@ -203,7 +208,7 @@ async function ensureTables() {
     // Ensure session_id column exists on leaderboards table
     try {
       await pool.query('ALTER TABLE leaderboards ADD COLUMN IF NOT EXISTS session_id INT REFERENCES sessions(id) ON DELETE SET NULL;');
-    } catch (migErr) {
+    } catch {
       // Ignore
     }
 
@@ -218,9 +223,19 @@ async function ensureTables() {
         fact_2 TEXT NOT NULL,
         fact_3 TEXT NOT NULL,
         lie_index INT NOT NULL,
+        difficulty VARCHAR(20) DEFAULT 'Medium',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // Ensure difficulty columns exist (migrations for existing PostgreSQL instances)
+    try {
+      await pool.query("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS difficulty VARCHAR(20) DEFAULT 'Medium';");
+      await pool.query("ALTER TABLE games ADD COLUMN IF NOT EXISTS difficulty VARCHAR(20) DEFAULT 'Medium';");
+      await pool.query("ALTER TABLE trivia_pool ADD COLUMN IF NOT EXISTS difficulty VARCHAR(20) DEFAULT 'Medium';");
+    } catch {
+      // Ignore
+    }
 
     // 6. Create User Achievements Table
     await pool.query(`
@@ -258,6 +273,7 @@ async function ensureTables() {
 // Database Query Routing
 // ==========================================
 
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export const query = async (text: string, params: any[] = []) => {
   const start = Date.now();
 
@@ -294,8 +310,8 @@ export const query = async (text: string, params: any[] = []) => {
     const age = params[2] !== undefined ? params[2] : 10;
     
     if (mockUsers.some((u) => u.username.toLowerCase() === username.toLowerCase())) {
-      const err = new Error('duplicate key value violates unique constraint');
-      (err as any).code = '23505';
+      const err = new Error('duplicate key value violates unique constraint') as Error & { code?: string };
+      err.code = '23505';
       throw err;
     }
 
@@ -360,16 +376,32 @@ export const query = async (text: string, params: any[] = []) => {
 
   // INSERT INTO sessions
   if (queryNormalized.includes('INSERT INTO sessions')) {
-    const [user_id, category, score, question_count, completed] = params;
+    const user_id = params[0];
+    const category = params[1];
+    let score = 0;
+    let question_count = 0;
+    let completed = false;
+    let diff = 'Medium';
+
+    if (params.length === 3) {
+      diff = params[2];
+    } else if (params.length === 6) {
+      score = params[2] || 0;
+      question_count = params[3] || 0;
+      completed = params[4] || false;
+      diff = params[5] || 'Medium';
+    }
+
     const newSession: MockSession = {
       id: mockSessions.length + 1,
       user_id,
       category,
-      question_count: question_count || 0,
-      score: score || 0,
-      completed: completed || false,
+      question_count,
+      score,
+      completed,
       hints_used: 0,
       current_streak: 0,
+      difficulty: diff,
       created_at: new Date(),
     };
     mockSessions.push(newSession);
@@ -412,7 +444,7 @@ export const query = async (text: string, params: any[] = []) => {
 
   // INSERT INTO games
   if (queryNormalized.includes('INSERT INTO games')) {
-    const [user_id, persona, category, fact_1, fact_2, fact_3, lie_index, session_id] = params;
+    const [user_id, persona, category, fact_1, fact_2, fact_3, lie_index, session_id, difficulty] = params;
     const newGame: MockGame = {
       id: mockGames.length + 1,
       user_id,
@@ -425,6 +457,7 @@ export const query = async (text: string, params: any[] = []) => {
       guessed_index: null,
       is_correct: null,
       session_id: session_id || null,
+      difficulty: difficulty || 'Medium',
       created_at: new Date(),
     };
     mockGames.push(newGame);
@@ -510,29 +543,38 @@ export const query = async (text: string, params: any[] = []) => {
     return { rows: filtered, rowCount: filtered.length };
   }
 
-  // SELECT * FROM trivia_pool WHERE category = $1 AND age_group = $2
+  // SELECT * FROM trivia_pool WHERE category = $1 AND age_group = $2 AND difficulty = $3
   if (queryNormalized.includes('FROM trivia_pool WHERE category =') && !queryNormalized.includes('persona NOT IN')) {
-    const [category, age_group] = params;
+    const [category, age_group, difficulty] = params;
     const matched = mockTriviaPool.filter((t) => 
       t.category.toLowerCase().trim() === category.toLowerCase().trim() &&
-      t.age_group.toLowerCase().trim() === age_group.toLowerCase().trim()
+      t.age_group.toLowerCase().trim() === age_group.toLowerCase().trim() &&
+      (!difficulty || t.difficulty.toLowerCase().trim() === difficulty.toLowerCase().trim())
     );
     return { rows: matched, rowCount: matched.length };
   }
 
   // SELECT * FROM trivia_pool WHERE category = $1 AND age_group = $2 AND persona NOT IN ...
   if (queryNormalized.includes('FROM trivia_pool') && queryNormalized.includes('category =') && queryNormalized.includes('persona NOT IN')) {
-    const [category, age_group, user_id] = params;
+    let category: string;
+    let age_group: string;
+    let difficulty: string | undefined;
+    let user_id: number;
+
+    if (params.length === 4) {
+      [category, age_group, difficulty, user_id] = params;
+    } else {
+      [category, age_group, user_id] = params;
+    }
     
-    // Get personas already played by user
     const playedPersonas = mockGames
       .filter((g) => g.user_id === user_id)
       .map((g) => g.persona.toLowerCase().trim());
       
-    // Find eligible questions in the pool
     const eligible = mockTriviaPool.filter((t) => 
       t.category.toLowerCase().trim() === category.toLowerCase().trim() &&
       t.age_group.toLowerCase().trim() === age_group.toLowerCase().trim() &&
+      (!difficulty || t.difficulty.toLowerCase().trim() === difficulty.toLowerCase().trim()) &&
       !playedPersonas.includes(t.persona.toLowerCase().trim())
     );
     
@@ -540,7 +582,6 @@ export const query = async (text: string, params: any[] = []) => {
       return { rows: [], rowCount: 0 };
     }
     
-    // Return random matching row
     const randIdx = Math.floor(Math.random() * eligible.length);
     return { rows: [eligible[randIdx]], rowCount: 1 };
   }
@@ -552,7 +593,7 @@ export const query = async (text: string, params: any[] = []) => {
 
   // INSERT INTO trivia_pool
   if (queryNormalized.includes('INSERT INTO trivia_pool')) {
-    const [category, age_group, persona, fact_1, fact_2, fact_3, lie_index] = params;
+    const [category, age_group, persona, fact_1, fact_2, fact_3, lie_index, difficulty] = params;
     const newRecord: MockTriviaPool = {
       id: mockTriviaPool.length + 1,
       category,
@@ -562,6 +603,7 @@ export const query = async (text: string, params: any[] = []) => {
       fact_2,
       fact_3,
       lie_index: parseInt(lie_index, 10),
+      difficulty: difficulty || 'Medium',
       created_at: new Date(),
     };
     mockTriviaPool.push(newRecord);

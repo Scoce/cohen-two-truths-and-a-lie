@@ -1,3 +1,4 @@
+/* eslint-disable */
 const fs = require('fs');
 const path = require('path');
 const { Pool } = require('@neondatabase/serverless');
@@ -75,6 +76,7 @@ async function run() {
         completed BOOLEAN DEFAULT FALSE,
         hints_used INT DEFAULT 0,
         current_streak INT DEFAULT 0,
+        difficulty VARCHAR(20) DEFAULT 'Medium',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -102,6 +104,7 @@ async function run() {
         guessed_index INT,
         is_correct BOOLEAN,
         session_id INT,
+        difficulty VARCHAR(20) DEFAULT 'Medium',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -147,6 +150,7 @@ async function run() {
         fact_2 TEXT NOT NULL,
         fact_3 TEXT NOT NULL,
         lie_index INT NOT NULL,
+        difficulty VARCHAR(20) DEFAULT 'Medium',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -182,6 +186,17 @@ async function run() {
       console.log(`[init-db] Test user "${testUsername}" created successfully with password "${testPassword}" and age 8!`);
     } else {
       console.log(`[init-db] Test user "${testUsername}" already exists.`);
+    }
+
+    // 7. Migrate schemas (add difficulty columns if missing)
+    console.log('[init-db] Migrating schemas to add difficulty columns...');
+    try {
+      await pool.query("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS difficulty VARCHAR(20) DEFAULT 'Medium';");
+      await pool.query("ALTER TABLE games ADD COLUMN IF NOT EXISTS difficulty VARCHAR(20) DEFAULT 'Medium';");
+      await pool.query("ALTER TABLE trivia_pool ADD COLUMN IF NOT EXISTS difficulty VARCHAR(20) DEFAULT 'Medium';");
+      console.log('[init-db] Database migrations completed successfully.');
+    } catch (migErr) {
+      console.warn('[init-db] Warning: Migration query failed:', migErr);
     }
 
     console.log('[init-db] Database initialization completed successfully!');
