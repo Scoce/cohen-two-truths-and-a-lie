@@ -5,6 +5,8 @@ import { useRouter, useParams } from 'next/navigation';
 import { ChevronLeft, Award, RefreshCw, LayoutDashboard } from 'lucide-react';
 import CityBackground from '@/components/CityBackground';
 import styles from '@/styles/game.module.css';
+import SoundEffects from '@/lib/soundEffects';
+import Confetti from '@/components/Confetti';
 
 interface GameState {
   gameId: number;
@@ -55,6 +57,17 @@ export default function GameRound() {
   const [nextGameId, setNextGameId] = useState<number | null>(null);
   const [pregenerating, setPregenerating] = useState(false);
   const nextGameIdRef = React.useRef<number | null>(null);
+
+  const [confettiActive, setConfettiActive] = useState(false);
+  const [unlockedToast, setUnlockedToast] = useState<{ name: string; description: string; icon: string; key: string } | null>(null);
+
+  const ACHIEVEMENT_DETAILS: Record<string, { name: string; description: string; icon: string }> = {
+    trivia_rookie: { name: 'Trivia Rookie', description: 'Find your first lie!', icon: '👶' },
+    on_fire: { name: 'On Fire', description: 'Reach a streak of 3 correct answers in a session.', icon: '🔥' },
+    lie_detector: { name: 'Lie Detector', description: 'Get all 10 answers correct in a single session!', icon: '🔎' },
+    hintless_wonder: { name: 'Hintless Wonder', description: 'Complete a full session without using any hints.', icon: '🧠' },
+    trivia_master: { name: 'Trivia Master', description: 'Reach a lifetime score of 500 points.', icon: '👑' },
+  };
 
   const handleRequestHint = async () => {
     if (!game || game.played || fetchingHint) return;
@@ -210,6 +223,38 @@ export default function GameRound() {
 
       // Update header score
       setUserScore(result.updatedScore);
+
+      // Play audio feedback
+      if (result.isCorrect) {
+        SoundEffects.playCorrect();
+      } else {
+        SoundEffects.playWrong();
+      }
+
+      // If session complete, play fanfare and trigger confetti
+      if (result.sessionCompleted) {
+        SoundEffects.playSessionComplete();
+        setConfettiActive(true);
+      }
+
+      // Check for newly unlocked achievements
+      if (result.newlyUnlocked && result.newlyUnlocked.length > 0) {
+        SoundEffects.playAchievement();
+        let delay = 0;
+        result.newlyUnlocked.forEach((key: string) => {
+          const detail = ACHIEVEMENT_DETAILS[key];
+          if (detail) {
+            setTimeout(() => {
+              setUnlockedToast({ ...detail, key });
+              // Hide toast after 4 seconds
+              setTimeout(() => {
+                setUnlockedToast(null);
+              }, 4000);
+            }, delay);
+            delay += 4500;
+          }
+        });
+      }
 
       // Transition to results screen
       setTimeout(() => {
@@ -588,6 +633,21 @@ export default function GameRound() {
             <button onClick={() => setShowHintModal(false)} className={styles.modalCloseBtn}>
               Got it
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Confetti Celebration */}
+      <Confetti active={confettiActive} />
+
+      {/* Achievement Toast Notification */}
+      {unlockedToast && (
+        <div className={styles.achievementToast}>
+          <div className={styles.toastIcon}>{unlockedToast.icon}</div>
+          <div className={styles.toastContent}>
+            <span className={styles.toastLabel}>Achievement Unlocked!</span>
+            <h4 className={styles.toastTitle}>{unlockedToast.name}</h4>
+            <p className={styles.toastDesc}>{unlockedToast.description}</p>
           </div>
         </div>
       )}

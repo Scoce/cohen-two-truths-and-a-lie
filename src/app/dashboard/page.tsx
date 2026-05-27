@@ -42,6 +42,8 @@ export default function Dashboard() {
   // Modal states
   const [showLeaderboardModal, setShowLeaderboardModal] = useState(false);
   const [activeLeaderboardTab, setActiveLeaderboardTab] = useState<'Children' | 'Teens' | 'Adults'>('Adults');
+  const [achievements, setAchievements] = useState<any[]>([]);
+  const [showAchievementsModal, setShowAchievementsModal] = useState(false);
 
   useEffect(() => {
     async function fetchUserAndLeaderboard() {
@@ -68,6 +70,13 @@ export default function Dashboard() {
         if (leaderboardRes.ok) {
           const leaderboardData = await leaderboardRes.json();
           setLeaderboard(leaderboardData.leaderboard || []);
+        }
+
+        // Fetch achievements
+        const achievementsRes = await fetch('/api/achievements');
+        if (achievementsRes.ok) {
+          const achievementsData = await achievementsRes.json();
+          setAchievements(achievementsData.achievements || []);
         }
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
@@ -252,6 +261,13 @@ export default function Dashboard() {
               >
                 <Trophy size={16} /> Hall of Fame
               </button>
+              <button 
+                onClick={() => setShowAchievementsModal(true)} 
+                className={styles.achievementsLink}
+                title="View My Badges"
+              >
+                🏅 Badges
+              </button>
               <span className={styles.username}>{user.username}</span>
               <span className={styles.scoreBadge}>{user.score} pts</span>
               <button 
@@ -378,6 +394,63 @@ export default function Dashboard() {
                     No entries yet in the {activeLeaderboardTab} division. Be the first to claim a spot!
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Achievements Modal */}
+      {showAchievementsModal && (
+        <div 
+          className={styles.modalOverlay} 
+          onClick={() => setShowAchievementsModal(false)}
+        >
+          <div 
+            className={`${styles.modalContent} glass-panel`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <div className={styles.modalHeaderTitleGroup}>
+                <span style={{ fontSize: '1.5rem', filter: 'drop-shadow(0 0 5px var(--neon-purple-glow))' }}>🏅</span>
+                <div>
+                  <h3 className={styles.modalTitle}>My Badges</h3>
+                  <div className={styles.modalSubtitle}>Track your trivia achievements</div>
+                </div>
+              </div>
+              <button 
+                className={styles.closeBtn} 
+                onClick={() => setShowAchievementsModal(false)}
+                aria-label="Close modal"
+              >
+                &times;
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <div className={styles.achievementsGrid}>
+                {achievements.map((ach) => (
+                  <div 
+                    key={ach.key} 
+                    className={`${styles.achievementCard} ${ach.unlocked ? '' : styles.achievementCardLocked}`}
+                    style={{
+                      ['--ach-color' as any]: ach.badgeColor,
+                    }}
+                  >
+                    <div className={styles.achievementIcon}>{ach.icon}</div>
+                    <div className={styles.achievementInfo}>
+                      <h4 className={styles.achievementName}>{ach.name}</h4>
+                      <p className={styles.achievementDesc}>{ach.description}</p>
+                      {ach.unlocked ? (
+                        <span className={styles.unlockedBadge}>
+                          Unlocked {ach.unlockedAt ? new Date(ach.unlockedAt).toLocaleDateString() : ''}
+                        </span>
+                      ) : (
+                        <span className={styles.lockedBadge}>Locked</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

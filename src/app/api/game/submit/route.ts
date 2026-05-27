@@ -63,6 +63,7 @@ export async function POST(req: Request) {
     let currentStreak = 0;
     let pointsEarned = 0;
     let correctCount = 0;
+    let hintsUsed = 0;
 
     if (game.session_id !== null) {
       // Get current session
@@ -73,6 +74,7 @@ export async function POST(req: Request) {
       
       if (sessionRes.rows.length > 0) {
         const session = sessionRes.rows[0];
+        hintsUsed = session.hints_used || 0;
         const oldStreak = session.current_streak || 0;
 
         if (isCorrect) {
@@ -122,6 +124,47 @@ export async function POST(req: Request) {
       updatedTotalScore = userRes.rows[0].score;
     }
 
+    // 7.5 Evaluate and unlock achievements
+    const newlyUnlocked: string[] = [];
+    try {
+      const unlockedRes = await query(
+        'SELECT achievement_key FROM user_achievements WHERE user_id = $1',
+        [sessionUser.userId]
+      );
+      const unlockedSet = new Set(unlockedRes.rows.map((r: any) => r.achievement_key));
+
+      if (isCorrect && !unlockedSet.has('trivia_rookie')) {
+        newlyUnlocked.push('trivia_rookie');
+      }
+
+      if (currentStreak >= 3 && !unlockedSet.has('on_fire')) {
+        newlyUnlocked.push('on_fire');
+      }
+
+      if (updatedTotalScore >= 500 && !unlockedSet.has('trivia_master')) {
+        newlyUnlocked.push('trivia_master');
+      }
+
+      if (sessionCompleted) {
+        if (correctCount === 10 && !unlockedSet.has('lie_detector')) {
+          newlyUnlocked.push('lie_detector');
+        }
+        if (hintsUsed === 0 && !unlockedSet.has('hintless_wonder')) {
+          newlyUnlocked.push('hintless_wonder');
+        }
+      }
+
+      // Save newly unlocked achievements to the database
+      for (const key of newlyUnlocked) {
+        await query(
+          'INSERT INTO user_achievements (user_id, achievement_key) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+          [sessionUser.userId, key]
+        );
+      }
+    } catch (achErr) {
+      console.error('[achievements-check] Failed to evaluate achievements:', achErr);
+    }
+
     // 8. Return response
     return NextResponse.json({
       isCorrect,
@@ -134,6 +177,7 @@ export async function POST(req: Request) {
       current_streak: currentStreak,
       pointsEarned,
       correctCount,
+      newlyUnlocked,
     });
   } catch (error) {
     console.error('[game-submit] Error:', error);

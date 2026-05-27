@@ -83,6 +83,13 @@ interface MockTriviaPool {
   created_at: Date;
 }
 
+interface MockUserAchievement {
+  id: number;
+  user_id: number;
+  achievement_key: string;
+  unlocked_at: Date;
+}
+
 // Seed the default test user with age 8 for kid-friendly testing
 const defaultTestUserPasswordHash = bcrypt.hashSync('password123', 10);
 
@@ -101,6 +108,7 @@ const mockSessions: MockSession[] = [];
 const mockGames: MockGame[] = [];
 const mockLeaderboards: MockLeaderboard[] = [];
 const mockTriviaPool: MockTriviaPool[] = [];
+const mockUserAchievements: MockUserAchievement[] = [];
 
 let dbInitialized = false;
 let dbInitializing = false;
@@ -211,6 +219,17 @@ async function ensureTables() {
         fact_3 TEXT NOT NULL,
         lie_index INT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 6. Create User Achievements Table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_achievements (
+        id SERIAL PRIMARY KEY,
+        user_id INT REFERENCES users(id) ON DELETE CASCADE,
+        achievement_key VARCHAR(50) NOT NULL,
+        unlocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, achievement_key)
       );
     `);
 
@@ -562,6 +581,32 @@ export const query = async (text: string, params: any[] = []) => {
     
     const deletedCount = initialLength - remaining.length;
     return { rows: [], rowCount: deletedCount };
+  }
+
+  // SELECT achievement_key, unlocked_at FROM user_achievements WHERE user_id = $1
+  if (queryNormalized.includes('FROM user_achievements WHERE user_id =')) {
+    const user_id = params[0];
+    const rows = mockUserAchievements.filter((ua) => ua.user_id === user_id);
+    return { rows, rowCount: rows.length };
+  }
+
+  // INSERT INTO user_achievements
+  if (queryNormalized.includes('INSERT INTO user_achievements')) {
+    const [user_id, achievement_key] = params;
+    const exists = mockUserAchievements.some(
+      (ua) => ua.user_id === user_id && ua.achievement_key === achievement_key
+    );
+    if (exists) {
+      return { rows: [], rowCount: 0 };
+    }
+    const newRecord: MockUserAchievement = {
+      id: mockUserAchievements.length + 1,
+      user_id,
+      achievement_key,
+      unlocked_at: new Date(),
+    };
+    mockUserAchievements.push(newRecord);
+    return { rows: [newRecord], rowCount: 1 };
   }
 
   console.warn('[db] Unhandled query in in-memory simulator:', queryNormalized);

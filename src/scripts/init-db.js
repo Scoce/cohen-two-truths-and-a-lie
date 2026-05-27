@@ -151,6 +151,18 @@ async function run() {
       );
     `);
 
+    // 6. Create User Achievements Table
+    console.log('[init-db] Creating "user_achievements" table...');
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_achievements (
+        id SERIAL PRIMARY KEY,
+        user_id INT REFERENCES users(id) ON DELETE CASCADE,
+        achievement_key VARCHAR(50) NOT NULL,
+        unlocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, achievement_key)
+      );
+    `);
+
     // 6. Seed Test User
     const testUsername = 'testuser';
     const testPassword = 'password123';
