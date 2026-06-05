@@ -2,10 +2,10 @@ import { SignJWT, jwtVerify } from 'jose';
 
 function getKey() {
   const secret = process.env.JWT_SECRET;
-  if (process.env.NODE_ENV === 'production' && !secret) {
-    throw new Error('CRITICAL SECURITY ERROR: JWT_SECRET environment variable must be set in production!');
+  if (!secret) {
+    throw new Error('CRITICAL: JWT_SECRET environment variable is required');
   }
-  return new TextEncoder().encode(secret || 'default-fallback-secret-for-two-truths-and-a-lie');
+  return new TextEncoder().encode(secret);
 }
 
 export async function signJWT(payload: { userId: number; username: string }): Promise<string> {
@@ -13,7 +13,9 @@ export async function signJWT(payload: { userId: number; username: string }): Pr
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('7d')
+    .setExpirationTime('24h')
+    .setIssuer('two-truths-and-a-lie')
+    .setAudience('two-truths-and-a-lie')
     .sign(key);
 }
 
@@ -22,9 +24,11 @@ export async function verifyJWT(token: string): Promise<{ userId: number; userna
     const key = getKey();
     const { payload } = await jwtVerify(token, key, {
       algorithms: ['HS256'],
+      issuer: 'two-truths-and-a-lie',
+      audience: 'two-truths-and-a-lie',
     });
     return payload as { userId: number; username: string };
-  } catch (err) {
+  } catch {
     return null;
   }
 }
@@ -41,7 +45,7 @@ export async function getUserFromRequest(req: Request): Promise<{ userId: number
     const token = cookies['session'];
     if (!token) return null;
     return await verifyJWT(token);
-  } catch (err) {
+  } catch {
     return null;
   }
 }

@@ -1,9 +1,19 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import { checkRateLimit, getClientIp, AUTH_RATE_LIMIT } from '@/lib/rateLimit';
 
 export async function POST(req: Request) {
   try {
+    const ip = getClientIp(req);
+    const rateCheck = checkRateLimit(ip, AUTH_RATE_LIMIT);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429, headers: { 'Retry-After': String(rateCheck.retryAfterSeconds) } }
+      );
+    }
+
     const { username, password, age } = await req.json();
 
     if (!username || !password) {
@@ -21,9 +31,30 @@ export async function POST(req: Request) {
       );
     }
 
+    if (trimmedUsername.length > 30) {
+      return NextResponse.json(
+        { error: 'Username must be 30 characters or fewer' },
+        { status: 400 }
+      );
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(trimmedUsername)) {
+      return NextResponse.json(
+        { error: 'Username may only contain letters, numbers, and underscores' },
+        { status: 400 }
+      );
+    }
+
     if (password.length < 6) {
       return NextResponse.json(
         { error: 'Password must be at least 6 characters long' },
+        { status: 400 }
+      );
+    }
+
+    if (password.length > 72) {
+      return NextResponse.json(
+        { error: 'Password must be 72 characters or fewer' },
         { status: 400 }
       );
     }
@@ -40,8 +71,8 @@ export async function POST(req: Request) {
     }
 
     // Hash the password
-    const salt = bcrypt.genSaltSync(10);
-    const passwordHash = bcrypt.hashSync(password, salt);
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
 
     // Insert user into database
     try {
@@ -53,11 +84,11 @@ export async function POST(req: Request) {
         { message: 'User created successfully' },
         { status: 201 }
       );
-    } catch (dbErr: any) {
-      // Check for unique violation error (Postgres error 23505)
-      if (dbErr.code === '23505') {
+    } catch (dbErr: unknown) {
+      const pgError = dbErr as { code?: string };
+      if (pgError.code === '23505') {
         return NextResponse.json(
-          { error: 'Username is already taken' },
+          { error: 'Could not create account. Try a different username.' },
           { status: 400 }
         );
       }

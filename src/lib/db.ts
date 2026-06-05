@@ -94,18 +94,19 @@ interface MockUserAchievement {
 }
 
 // Seed the default test user with age 8 for kid-friendly testing
-const defaultTestUserPasswordHash = bcrypt.hashSync('password123', 10);
+const mockUsers: MockUser[] = [];
 
-const mockUsers: MockUser[] = [
-  {
+if (process.env.SEED_TEST_USER === 'true') {
+  const defaultTestUserPasswordHash = bcrypt.hashSync('password123', 10);
+  mockUsers.push({
     id: 1,
     username: 'testuser',
     password_hash: defaultTestUserPasswordHash,
     score: 0,
     age: 8,
     created_at: new Date(),
-  },
-];
+  });
+}
 
 const mockSessions: MockSession[] = [];
 const mockGames: MockGame[] = [];
@@ -275,6 +276,11 @@ async function ensureTables() {
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export const query = async (text: string, params: any[] = []) => {
+  // Refuse to use in-memory fallback in production
+  if (process.env.NODE_ENV === 'production' && !pool) {
+    throw new Error('CRITICAL: DATABASE_URL must be set in production. Refusing to use in-memory fallback.');
+  }
+
   const start = Date.now();
 
   // 1. If real database is configured

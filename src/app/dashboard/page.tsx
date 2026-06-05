@@ -118,7 +118,6 @@ export default function Dashboard() {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/api/auth/logout', { method: 'POST' }).catch(() => {});
       await fetch('/api/auth/logout', { method: 'POST' });
       router.push('/');
     } catch (err) {

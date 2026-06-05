@@ -16,7 +16,14 @@ export async function POST(req: Request) {
     // 2. Parse request body
     const { gameId, guessedIndex } = await req.json();
 
-    if (gameId === undefined || guessedIndex === undefined || guessedIndex < 0 || guessedIndex > 2) {
+    if (
+      gameId === undefined ||
+      guessedIndex === undefined ||
+      !Number.isInteger(gameId) ||
+      !Number.isInteger(guessedIndex) ||
+      guessedIndex < 0 ||
+      guessedIndex > 2
+    ) {
       return NextResponse.json(
         { error: 'Invalid parameters provided' },
         { status: 400 }
@@ -131,6 +138,7 @@ export async function POST(req: Request) {
         'SELECT achievement_key FROM user_achievements WHERE user_id = $1',
         [sessionUser.userId]
       );
+      /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
       const unlockedSet = new Set(unlockedRes.rows.map((r: any) => r.achievement_key));
 
       if (isCorrect && !unlockedSet.has('trivia_rookie')) {

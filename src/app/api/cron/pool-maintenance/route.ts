@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { generateTwoTruthsAndALie } from '@/lib/gemini';
+import { checkRateLimit, getClientIp, CRON_RATE_LIMIT } from '@/lib/rateLimit';
 
 export const maxDuration = 60; // Allow up to 60 seconds on Vercel Pro if available
 
@@ -15,22 +16,28 @@ export async function POST(req: Request) {
   return handleMaintenance(req);
 }
 
-export async function GET(req: Request) {
-  return handleMaintenance(req);
-}
-
 async function handleMaintenance(req: Request) {
   try {
-    // 1. Authorization check
-    const authHeader = req.headers.get('Authorization');
-    const url = new URL(req.url);
-    const secretParam = url.searchParams.get('secret');
-    const cronSecret = process.env.CRON_SECRET;
+    // Rate limiting
+    const ip = getClientIp(req);
+    const rateCheck = checkRateLimit(ip, CRON_RATE_LIMIT);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        { status: 429, headers: { 'Retry-After': String(rateCheck.retryAfterSeconds) } }
+      );
+    }
 
-    // In production, enforce cron secret check
-    if (process.env.NODE_ENV === 'production' && cronSecret) {
+    // Authorization check
+    const authHeader = req.headers.get('Authorization');
+
+    if (process.env.NODE_ENV !== 'development') {
+      const cronSecret = process.env.CRON_SECRET;
+      if (!cronSecret) {
+        return NextResponse.json({ error: 'CRON_SECRET not configured' }, { status: 500 });
+      }
       const expectedAuth = `Bearer ${cronSecret}`;
-      if (authHeader !== expectedAuth && secretParam !== cronSecret) {
+      if (authHeader !== expectedAuth) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
     }

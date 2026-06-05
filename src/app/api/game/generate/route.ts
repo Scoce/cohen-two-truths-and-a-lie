@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getUserFromRequest } from '@/lib/auth';
 import { query } from '@/lib/db';
 import { generateTwoTruthsAndALie } from '@/lib/gemini';
+import { checkRateLimit, GAME_RATE_LIMIT } from '@/lib/rateLimit';
 
 export async function POST(req: Request) {
   try {
@@ -14,10 +15,30 @@ export async function POST(req: Request) {
       );
     }
 
+    const rateCheck = checkRateLimit(String(sessionUser.userId), GAME_RATE_LIMIT);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please slow down.' },
+        { status: 429, headers: { 'Retry-After': String(rateCheck.retryAfterSeconds) } }
+      );
+    }
+
     // 2. Parse category and difficulty from body
     const body = await req.json().catch(() => ({}));
     const category = body.category || 'sports';
     let difficulty = body.difficulty || 'Medium';
+
+    const VALID_CATEGORIES = ['sports', 'movies', 'science', 'history', 'music'];
+    const VALID_DIFFICULTIES = ['Easy', 'Medium', 'Hard'];
+    if (!VALID_CATEGORIES.includes(category)) {
+      return NextResponse.json(
+        { error: 'Invalid category' },
+        { status: 400 }
+      );
+    }
+    if (!VALID_DIFFICULTIES.includes(difficulty)) {
+      difficulty = 'Medium';
+    }
 
     // 3. Check for an active, uncompleted game session for this user (cross-category)
     const activeSessionRes = await query(
