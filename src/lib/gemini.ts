@@ -24,7 +24,7 @@ const KIDS_MOCK_QUESTIONS: Record<string, GameQuestion[]> = {
       facts: [
         "He has won the World Cup and is considered one of the greatest soccer players ever.",
         "He had a growth hormone condition when he was little and Barcelona paid for his medical treatment.",
-        "He plays professional basketball for the Chicago Bulls when soccer season is over."
+        "He grew up playing soccer on the beaches of Rio de Janeiro in Brazil."
       ],
       lieIndex: 2
     },
@@ -33,99 +33,99 @@ const KIDS_MOCK_QUESTIONS: Record<string, GameQuestion[]> = {
       facts: [
         "He is one of the most famous basketball players in the world and has won four NBA championships.",
         "He starred in the animated movie 'Space Jam: A New Legacy' alongside Bugs Bunny.",
-        "He stands at over eight feet tall, making him the tallest human in history."
+        "He was drafted by the Miami Heat as the number one pick in the 2003 NBA Draft."
       ],
       lieIndex: 2
     },
     {
       persona: "Serena Williams",
       facts: [
-        "She is one of the greatest tennis players ever, winning 23 Grand Slam singles titles.",
+        "She has won a total of 15 Grand Slam singles titles during her amazing career.",
         "She began playing tennis at the age of four with her sister Venus Williams.",
-        "She plays tennis using a massive wooden racket that belonged to the Queen of England."
+        "She is one of the greatest tennis players ever and a true champion of the sport."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Simone Biles",
       facts: [
-        "She is the most decorated gymnast in history, winning dozens of Olympic and World Championship medals.",
+        "She first represented the United States at the 2012 Olympics in London.",
         "She has a signature gymnastics move named after her called the 'Biles'.",
-        "She won all of her gymnastics gold medals while wearing heavy iron shoes."
+        "She is the most decorated gymnast in history, winning dozens of Olympic and World Championship medals."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Usain Bolt",
       facts: [
-        "He is the fastest runner in history, holding the world record for the 100-meter sprint.",
+        "He is from the United States and grew up training in California.",
         "His nickname is 'Lightning Bolt' and he does a signature lightning pose after winning.",
-        "He won his races by riding a super-fast electric scooter instead of running."
+        "He is the fastest runner in history, holding the world record for the 100-meter sprint."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Michael Jordan",
       facts: [
-        "He won six basketball championships with the Chicago Bulls in the 1990s.",
+        "He was drafted by the New York Knicks as the very first pick in the NBA Draft.",
         "He starred in the original 'Space Jam' movie with Looney Tunes characters.",
-        "He wore a secret jetpack under his jersey to help him jump higher."
+        "He won six basketball championships with the Chicago Bulls in the 1990s."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Steph Curry",
       facts: [
-        "He is famous for scoring three-pointers from very far away on the basketball court.",
+        "He plays for the Los Angeles Lakers and helped them win multiple championships.",
         "Both his father and his brother have also played in the NBA.",
-        "He plays basketball wearing slippery rubber boots instead of sneakers."
+        "He is famous for scoring three-pointers from very far away on the basketball court."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Cristiano Ronaldo",
       facts: [
-        "He is one of the most popular soccer players ever and has played for Real Madrid and Manchester United.",
+        "He was born and raised in Madrid, Spain, where he first learned to play soccer.",
         "He has scored over 800 goals during his professional career.",
-        "He plays soccer with a golden ball that was given to him by the King of Spain."
+        "He is one of the most popular soccer players ever and has played for Real Madrid and Manchester United."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Patrick Mahomes",
       facts: [
-        "He is a super star quarterback who has won multiple Super Bowls with the Kansas City Chiefs.",
+        "He won his first Super Bowl playing for the Dallas Cowboys.",
         "His father was a professional baseball pitcher in the Major Leagues.",
-        "He throws the football using a giant mechanical catapult on his arm."
+        "He is a super star quarterback who has won multiple Super Bowls."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Shaquille O'Neal",
       facts: [
-        "He was a giant basketball star known as 'Shaq' who won four NBA titles.",
+        "He spent most of his career playing for the Golden State Warriors.",
         "He is so big that he wears size 22 shoes.",
-        "He won a world championship in professional figure skating on ice."
+        "He was a giant basketball star known as 'Shaq' who won four NBA titles."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Tiger Woods",
       facts: [
-        "He is one of the most famous golfers of all time and has won 15 major tournaments.",
+        "He won his first major golf tournament when he was 28 years old.",
         "He started playing golf when he was a toddler and was on TV showing his skills at age two.",
-        "He plays golf with a live tiger that helps him find golf balls in the grass."
+        "He is one of the most famous golfers of all time and has won 15 major tournaments."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Chloe Kim",
       facts: [
-        "She is an Olympic gold medal snowboarder who started snowboarding at age four.",
+        "She competes in Olympic figure skating and has won medals on the ice.",
         "She was the youngest woman to win an Olympic snowboarding gold medal at age 17.",
-        "She glides down the snowboard ramp riding on a giant block of frozen cheese."
+        "She started snowboarding at age four and is an incredible athlete."
       ],
-      lieIndex: 2
+      lieIndex: 0
     }
   ],
   movies: [
@@ -134,7 +134,7 @@ const KIDS_MOCK_QUESTIONS: Record<string, GameQuestion[]> = {
       facts: [
         "She is the Queen of Arendelle and has magical powers that let her control ice and snow.",
         "She has a younger sister named Anna who goes on an adventure to find her.",
-        "Her best friend is a fire-breathing dragon named Mushu who guards the castle."
+        "Her magical snowman friend who loves warm hugs is named Marshmallow."
       ],
       lieIndex: 2
     },
@@ -143,7 +143,7 @@ const KIDS_MOCK_QUESTIONS: Record<string, GameQuestion[]> = {
       facts: [
         "He is a young wizard who attends Hogwarts School of Witchcraft and Wizardry.",
         "He has a scar on his forehead shaped like a lightning bolt.",
-        "He flies around Hogwarts on a magical flying carpet instead of a broomstick."
+        "He was sorted into Ravenclaw house at Hogwarts by the magical Sorting Hat."
       ],
       lieIndex: 2
     },
@@ -152,7 +152,7 @@ const KIDS_MOCK_QUESTIONS: Record<string, GameQuestion[]> = {
       facts: [
         "His secret name is Peter Parker and he lives in New York City.",
         "He was bitten by a radioactive spider which gave him spider-like superpowers.",
-        "He shoots spiderwebs out of his eyes to climb walls and catch bad guys."
+        "His uncle Tony taught him that with great power comes great responsibility."
       ],
       lieIndex: 2
     },
@@ -161,7 +161,7 @@ const KIDS_MOCK_QUESTIONS: Record<string, GameQuestion[]> = {
       facts: [
         "He is the mascot of Disney and was created by Walt Disney in 1928.",
         "His first famous cartoon appearance was in a short film called 'Steamboat Willie'.",
-        "He is a real mouse that was captured in a forest and trained to dance on stage."
+        "He was created by a man named Steven Spielberg in a studio in New York."
       ],
       lieIndex: 2
     },
@@ -170,7 +170,7 @@ const KIDS_MOCK_QUESTIONS: Record<string, GameQuestion[]> = {
       facts: [
         "He lives in a pineapple under the sea in a town called Bikini Bottom.",
         "He works as a fry cook making Krabby Patties at the Krusty Krab.",
-        "He is a real kitchen sponge that fell off a boat and came to life."
+        "His best friend is a pink octopus named Squidward who lives next door."
       ],
       lieIndex: 2
     },
@@ -179,7 +179,7 @@ const KIDS_MOCK_QUESTIONS: Record<string, GameQuestion[]> = {
       facts: [
         "He is a green ogre who lives in a swamp and goes on a quest to rescue Princess Fiona.",
         "His best friend is a talking Donkey who loves eating waffles.",
-        "He is a friendly alien who landed in the swamp from another planet."
+        "He rescues Princess Fiona from a tower guarded by a giant spider."
       ],
       lieIndex: 2
     },
@@ -188,7 +188,7 @@ const KIDS_MOCK_QUESTIONS: Record<string, GameQuestion[]> = {
       facts: [
         "He is a space ranger toy in the movie 'Toy Story' who belongs to a boy named Andy.",
         "His catchphrase is 'To infinity and beyond!'.",
-        "He actually flies to outer space in a real rocket ship when Andy goes to school."
+        "He belongs to a boy named Charlie who takes him on adventures everywhere."
       ],
       lieIndex: 2
     },
@@ -197,7 +197,7 @@ const KIDS_MOCK_QUESTIONS: Record<string, GameQuestion[]> = {
       facts: [
         "He is a lion prince who runs away after his father Mufasa dies, but returns to become king.",
         "His friends who teach him the phrase 'Hakuna Matata' are Timon and Pumbaa.",
-        "He defeats his evil uncle Scar by challenging him to a dance contest."
+        "His wise friend who teaches him about the Circle of Life is a warthog named Pumbaa."
       ],
       lieIndex: 2
     },
@@ -206,7 +206,7 @@ const KIDS_MOCK_QUESTIONS: Record<string, GameQuestion[]> = {
       facts: [
         "He is a yellow, mouse-like Pokémon who is Ash Ketchum's best friend.",
         "He has red circles on his cheeks that store electricity to shoot lightning bolts.",
-        "He evolved from a giant green dinosaur named Yoshi."
+        "He evolves from a smaller Pokémon called Jigglypuff."
       ],
       lieIndex: 2
     },
@@ -214,17 +214,17 @@ const KIDS_MOCK_QUESTIONS: Record<string, GameQuestion[]> = {
       persona: "Barbie",
       facts: [
         "She is a famous fashion doll created in 1959 who has had over 200 different careers.",
-        "She lives in a pink Dreamhouse and has a boyfriend named Ken.",
-        "She was originally created to be a real-life robot that could clean houses."
+        "She lives in a pink Dreamhouse and has a boyfriend named Kevin.",
+        "She was originally created by the toy company Mattel."
       ],
-      lieIndex: 2
+      lieIndex: 1
     },
     {
       persona: "Sonic the Hedgehog",
       facts: [
         "He is a blue hedgehog who can run at supersonic speeds and loves eating chili dogs.",
         "He collects golden rings in his games and battles the evil Dr. Eggman.",
-        "He gets his super speed by wearing rocket-powered roller skates."
+        "His best friend is a red echidna named Tails who can fly with his spinning tails."
       ],
       lieIndex: 2
     },
@@ -233,7 +233,7 @@ const KIDS_MOCK_QUESTIONS: Record<string, GameQuestion[]> = {
       facts: [
         "He is a red race car in the movie 'Cars' with the racing number 95.",
         "His catchphrase is 'Ka-chow!' and his best friend is a tow truck named Mater.",
-        "He has a secret driver inside him named Bob who steers him during races."
+        "His best friend is a fire truck named Red who helps him win races."
       ],
       lieIndex: 2
     }
@@ -242,330 +242,330 @@ const KIDS_MOCK_QUESTIONS: Record<string, GameQuestion[]> = {
     {
       persona: "Neil Armstrong",
       facts: [
-        "He was an American astronaut who was the first person to ever walk on the moon in 1969.",
-        "When he stepped onto the moon, he famously said: 'That's one small step for man, one giant leap for mankind.'",
-        "He brought his pet dog on the rocket ship to run around on the moon with him."
+        "He was a Russian astronaut who launched from Moscow on his historic moon mission.",
+        "When he stepped onto the moon, he famously said: 'That\u0027s one small step for man, one giant leap for mankind.'",
+        "He was the first person to ever walk on the moon in 1969."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Albert Einstein",
       facts: [
-        "He was a famous scientist who came up with the world-famous formula E=mc².",
+        "He won the Nobel Prize for discovering his famous formula E=mc².",
         "He was known for having wild, messy white hair and not wearing socks.",
-        "He invented the first handheld smartphone and the mobile internet."
+        "He was a famous scientist who changed how we understand space and time."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Thomas Edison",
       facts: [
-        "He was a famous inventor who developed the practical incandescent light bulb.",
+        "He was a famous inventor from England who moved to America as a teenager.",
         "He built a famous research lab in Menlo Park, New Jersey.",
-        "He invented the microwave oven so he could pop popcorn quickly."
+        "He developed the practical incandescent light bulb."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Isaac Newton",
       facts: [
-        "He was a scientist who discovered the laws of gravity and motion.",
+        "He was a French scientist who lived and worked in Paris.",
         "He was inspired to think about gravity when he saw an apple fall from a tree.",
-        "He discovered gravity by falling off a giant wall and floating up into the sky."
+        "He discovered the laws of gravity and motion."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Marie Curie",
       facts: [
-        "She was a pioneering scientist who discovered the elements Radium and Polonium.",
+        "She was born and raised in France, where she spent her entire life.",
         "She is the only woman to win two Nobel Prizes in two different sciences.",
-        "She invented a magical potion that could make people turn invisible."
+        "She discovered the elements Radium and Polonium."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Galileo Galilei",
       facts: [
-        "He was an Italian astronomer who used a telescope to discover the moons of Jupiter.",
+        "He was a famous French astronomer who worked at the University of Paris.",
         "He supported the idea that the Earth and other planets revolve around the Sun.",
-        "He built a giant wooden ladder to climb up and touch the stars."
+        "He used a telescope to discover the moons of Jupiter."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Jane Goodall",
       facts: [
-        "She is a famous scientist who spent decades studying chimpanzees in the wild.",
-        "She discovered that chimpanzees can make and use tools, just like humans.",
-        "She taught a family of wild chimpanzees how to drive a pickup truck."
+        "She spent decades studying gorillas in the mountains of Rwanda.",
+        "She discovered that primates can make and use tools, just like humans.",
+        "She is one of the most famous scientists who has studied animals in the wild."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Sally Ride",
       facts: [
-        "She was an astronaut who became the first American woman to travel into outer space in 1983.",
+        "She was the first woman from any country to ever travel into space.",
         "She was also a professional-level tennis player before joining NASA.",
-        "She flew to outer space by riding on the back of a giant space eagle."
+        "She was an astronaut who traveled into outer space in 1983."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Nikola Tesla",
       facts: [
-        "He was an inventor who designed the alternating current (AC) electricity system we use today.",
+        "He was an American inventor who was born and raised in New York City.",
         "He was famous for creating artificial lightning bolts in his laboratory.",
-        "He invented a handheld remote control that could control the weather."
+        "He designed the alternating current (AC) electricity system we use today."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Charles Darwin",
       facts: [
         "He was a naturalist who wrote about evolution after visiting the Galapagos Islands.",
-        "He spent five years traveling around the world on a ship called the HMS Beagle.",
-        "He proved that humans are directly descended from giant fire-breathing dragons."
+        "He spent five years traveling around the world on a ship called the HMS Victory.",
+        "He is one of the most important scientists in the history of biology."
       ],
-      lieIndex: 2
+      lieIndex: 1
     },
     {
       persona: "Stephen Hawking",
       facts: [
-        "He was a famous physicist who wrote the best-selling book 'A Brief History of Time'.",
+        "He was an American physicist who worked at Harvard University.",
         "He researched black holes and how the universe began.",
-        "He traveled through a real black hole and visited another galaxy."
+        "He wrote the best-selling book 'A Brief History of Time'."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Benjamin Franklin",
       facts: [
-        "He was an inventor who proved lightning is electricity by flying a kite in a thunderstorm.",
+        "He proved lightning is electricity by flying a kite during a snowstorm.",
         "He invented bifocal glasses and the lightning rod.",
-        "He was elected the first King of the United States."
+        "He was one of the Founding Fathers of the United States."
       ],
-      lieIndex: 2
+      lieIndex: 0
     }
   ],
   history: [
     {
       persona: "King Tut (Tutankhamun)",
       facts: [
-        "He became a pharaoh (king) of Ancient Egypt when he was only nine years old.",
+        "He became a pharaoh of Ancient Egypt when he was 25 years old.",
         "His tomb was discovered almost completely untouched, filled with golden treasures and a famous golden mask.",
-        "He wore a modern digital wristwatch made of solid gold that kept perfect time."
+        "He is one of the most famous pharaohs in history."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Amelia Earhart",
       facts: [
-        "She was a brave female pilot who was the first woman to fly alone across the Atlantic Ocean.",
+        "She was a brave female pilot who was the first woman to fly alone across the Pacific Ocean.",
         "She loved writing and wrote best-selling books about her flying experiences.",
-        "She successfully flew her airplane all the way into outer space to visit the space station."
+        "She is one of the most famous pilots in history."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Abraham Lincoln",
       facts: [
-        "He was the 16th President of the United States who led the country during the Civil War.",
+        "He was the 20th President of the United States who led the country during the Civil War.",
         "He was famous for being very tall and wearing a tall black stovepipe hat.",
-        "He was a champion skateboarder who won gold medals in the X-Games."
+        "He is considered one of the greatest American presidents."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Cleopatra",
       facts: [
-        "She was the famous last queen of Ancient Egypt and was known for her intelligence.",
+        "She was the famous last queen of Ancient Greece who ruled from Athens.",
         "She belonged to a Greek family that ruled Egypt after Alexander the Great.",
-        "She traveled to Rome inside a modern submarine to visit Julius Caesar."
+        "She is one of the most famous rulers in ancient history."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "George Washington",
       facts: [
         "He was the first President of the United States and the commander of the army during the Revolutionary War.",
-        "His face is on the United States one-dollar bill and the quarter coin.",
-        "He famously cut down a cherry tree using a laser-powered chainsaw."
+        "His face is on the United States five-dollar bill and the quarter coin.",
+        "He is known as the 'Father of His Country'."
       ],
-      lieIndex: 2
+      lieIndex: 1
     },
     {
       persona: "Julius Caesar",
       facts: [
-        "He was a powerful general and leader of Ancient Rome who expanded Rome's territory.",
-        "The month of July is named after him.",
-        "He was famous for driving a red sports car around the streets of Rome."
+        "He was a powerful general and leader of Ancient Rome who expanded Rome\u0027s territory.",
+        "The month of June is named after him.",
+        "He is one of the most famous leaders in history."
       ],
-      lieIndex: 2
+      lieIndex: 1
     },
     {
       persona: "Joan of Arc",
       facts: [
-        "She was a young French peasant girl who led the French army to victories during a big war.",
-        "She believed she received messages from angels telling her to help the King of France.",
-        "She wore high-tech metal armor that could shoot laser beams from the shoulders."
+        "She was a young English peasant girl who fought for the King of England.",
+        "She believed she received messages from angels telling her to help her king.",
+        "She led armies to victories during a big war when she was very young."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Pocahontas",
       facts: [
         "She was a Native American woman who helped keep peace between her tribe and the English settlers.",
-        "Her real name was Matoaka, and Pocahontas was a nickname meaning 'playful one'.",
-        "She flew to England on a magical wooden canoe that could hover above the trees."
+        "Her real name was Matoaka, and Pocahontas was a nickname meaning 'brave warrior'.",
+        "She is one of the most famous Native American women in history."
       ],
-      lieIndex: 2
+      lieIndex: 1
     },
     {
       persona: "Mahatma Gandhi",
       facts: [
-        "He was a famous leader in India who led a peaceful movement to help India gain independence.",
+        "He led a peaceful movement to help China gain independence from European powers.",
         "He was known for wearing simple cotton clothes that he spun himself.",
-        "He led a giant army of soldiers on hoverboards to fight the British empire."
+        "He is considered one of the greatest leaders of peaceful protest."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Marco Polo",
       facts: [
-        "He was an Italian explorer who traveled along the Silk Road to China and wrote a book about it.",
+        "He was a Spanish explorer who traveled along the Silk Road to China and wrote a book about it.",
         "He lived in China for 17 years and worked for the ruler Kublai Khan.",
-        "He brought back a pet dragon from China that lived in his house in Venice."
+        "He is one of the most famous explorers in history."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Alexander the Great",
       facts: [
         "He was a young king of Macedonia who created one of the largest empires in history before age 30.",
-        "His famous horse was named Bucephalus, which Alexander tamed when he was a boy.",
-        "He conquered Greece and Persia using giant mechanical robots shaped like horses."
+        "His famous horse was named Thunder, which Alexander tamed when he was a boy.",
+        "He is considered one of the greatest military commanders ever."
       ],
-      lieIndex: 2
+      lieIndex: 1
     },
     {
       persona: "Queen Victoria",
       facts: [
-        "She was the Queen of the United Kingdom who ruled for 63 years during a time of great industry and empire.",
+        "She was the Queen of France who ruled for 63 years during a time of great industry and empire.",
         "She started the popular tradition of brides wearing white wedding dresses.",
-        "She communicated with her advisors using a secret digital smartphone."
+        "She is one of the longest-reigning monarchs in history."
       ],
-      lieIndex: 2
+      lieIndex: 0
     }
   ],
   music: [
     {
       persona: "Taylor Swift",
       facts: [
-        "She is a super popular singer-songwriter who is known for writing songs about her own life.",
+        "She got her start performing country music in Nashville after growing up in California.",
         "She has won many Grammy Awards and has huge concerts called the Eras Tour.",
-        "She is also a professional soccer player who won an Olympic gold medal."
+        "She is a super popular singer-songwriter who writes songs about her own life."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Mario (Video Game Star)",
       facts: [
-        "He is a heroic plumber who wears a red cap and jumps on Goombas to save Princess Peach.",
+        "He is a heroic plumber who wears a green cap and jumps on Goombas to save Princess Peach.",
         "He has a brother named Luigi who wears green and helps him on adventures.",
-        "He won a real-life Grammy Award for his hit pop song 'Peaches' on the radio."
+        "He is one of the most famous video game characters of all time."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Ariana Grande",
       facts: [
         "She is a famous pop singer known for her high vocal range and signature ponytail.",
-        "She started her career acting on Nickelodeon TV shows like 'Victorious'.",
-        "She plays professional drums for a heavy metal rock band in her free time."
+        "She started her career acting on Disney Channel shows like 'Hannah Montana'.",
+        "She has released many hit songs and albums."
       ],
-      lieIndex: 2
+      lieIndex: 1
     },
     {
       persona: "Justin Bieber",
       facts: [
+        "He is from Australia and learned to play guitar from his grandfather.",
         "He was discovered on YouTube as a teenager and became a global pop star with the song 'Baby'.",
-        "He is from Canada and plays the guitar, drums, and piano.",
-        "He travels to his concerts by riding on a giant flying record player."
+        "He plays the guitar, drums, and piano."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Michael Jackson",
       facts: [
         "He was known as the 'King of Pop' and created the famous 'Moonwalk' dance move.",
-        "His album 'Thriller' is the best-selling music album of all time.",
-        "He lived in a magical castle made of candy and chocolate."
+        "His album 'Bad' is the best-selling music album of all time.",
+        "He is one of the most famous musicians who ever lived."
       ],
-      lieIndex: 2
+      lieIndex: 1
     },
     {
       persona: "Selena Gomez",
       facts: [
-        "She is a famous singer and actress who starred in 'Wizards of Waverly Place'.",
+        "She is a famous singer and actress who starred in 'iCarly' on Nickelodeon.",
         "She has her own popular makeup brand called Rare Beauty.",
-        "She is a secret agent who performs missions for the government between concerts."
+        "She is one of the most followed people on social media."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Ed Sheeran",
       facts: [
-        "He is a British singer-songwriter known for hit songs like 'Shape of You' and 'Perfect'.",
+        "He is an American singer-songwriter from New York known for hit songs like 'Shape of You'.",
         "He plays his concerts alone on stage using a guitar and a loop pedal.",
-        "He performs all his songs while juggling fire torches on a unicycle."
+        "He has won many awards for his songwriting and performances."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Beyoncé",
       facts: [
-        "She is a superstar singer who first became famous in a girl group called Destiny's Child.",
+        "She first became famous in a girl group called the Spice Girls.",
         "Her fans are famously called the 'BeyHive'.",
-        "She has a pet bumblebee that is three feet tall and sings backup vocals."
+        "She is a superstar singer who is one of the best-selling artists of all time."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Beethoven",
       facts: [
-        "He was a famous classical composer who wrote beautiful piano music.",
+        "He was a famous classical composer from France who wrote beautiful piano music.",
         "He continued to write music even after he went completely deaf.",
-        "He composed his famous symphonies using an electric synthesizer keyboard."
+        "He is considered one of the greatest composers in history."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Billie Eilish",
       facts: [
-        "She is a young pop star who won multiple Grammy Awards for her album made at home with her brother.",
+        "She is a young pop star who won multiple Grammy Awards for her album made at home with her sister.",
         "She is famous for singing the theme song for the James Bond movie 'No Time to Die'.",
-        "She performs all of her songs in public while wearing a giant astronaut suit."
+        "She is one of the biggest pop stars in the world."
       ],
-      lieIndex: 2
+      lieIndex: 0
     },
     {
       persona: "Bruno Mars",
       facts: [
         "He is a singer and dancer known for retro-style hits like 'Uptown Funk' and '24K Magic'.",
-        "He has a collaborative band with Anderson .Paak called Silk Sonic.",
-        "He was born on the planet Mars and moved to Earth when he was a kid."
+        "He has a collaborative band with Anderson .Paak called Velvet Groove.",
+        "He has won many Grammy Awards for his music."
       ],
-      lieIndex: 2
+      lieIndex: 1
     },
     {
       persona: "Elvis Presley",
       facts: [
-        "He was known as the 'King of Rock and Roll' and was famous for his dancing hips.",
+        "He was known as the 'King of Jazz' and was famous for his energetic dance moves.",
         "His famous home in Memphis, Tennessee, is called Graceland.",
-        "He flew to his concerts on a magical carpet that played guitar music."
+        "He is one of the best-selling solo music artists of all time."
       ],
-      lieIndex: 2
+      lieIndex: 0
     }
   ]
 };
@@ -1172,7 +1172,7 @@ export async function generateTwoTruthsAndALie(
     // Customize guidelines based on difficulty settings
     let difficultyGuidelines = '';
     if (difficulty === 'Easy') {
-      difficultyGuidelines = `Difficulty Setting: EASY. The truths should be very well-known facts. The lie must be a highly obvious or fun mismatch or a clear giveaway (for example, saying a soccer player plays professional hockey, or an astronaut built a wooden ladder to touch the stars). Keep it lighthearted and easy to identify.`;
+      difficultyGuidelines = `Difficulty Setting: EASY. The truths should be very well-known facts. The lie should be a clearly incorrect but still plausible detail — something that sounds real but is obviously wrong if you know the subject (for example, saying Messi grew up in Brazil instead of Argentina, or that Harry Potter was sorted into Ravenclaw instead of Gryffindor, or that LeBron James was drafted by the Miami Heat instead of Cleveland). Do NOT use absurd or fantastical lies like jetpacks, magical creatures, or impossible scenarios — keep it grounded and factual.`;
     } else if (difficulty === 'Hard') {
       difficultyGuidelines = `Difficulty Setting: HARD. The truths should be lesser-known, obscure, or highly specific facts. The lie must be extremely subtle, clever, and tricky, with no obvious giveaways. It should be a minor factual error embedded in an otherwise completely accurate, authentic-sounding sentence (e.g., swapping a championship year by just 1 year, replacing a gold medal with a silver medal, or claiming they won a Grammy/Oscar when they were only nominated).`;
     } else {

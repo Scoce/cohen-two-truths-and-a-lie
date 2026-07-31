@@ -129,43 +129,48 @@ export async function POST(req: Request) {
 
     console.log(`[game-generate] Cache stats - Total in pool: ${poolQuestions.length}, Eligible unplayed: ${eligibleCached.length}`);
 
-    // If buffer size (eligible cached questions) is less than 4, proactively pre-pull/generate a new one!
-    if (eligibleCached.length < 4) {
-      console.log(`[game-generate] Cache pool buffer low (${eligibleCached.length} < 4). Pre-pulling new persona...`);
-      try {
-        const poolPersonas = poolQuestions.map((q) => q.persona);
-        const allExcludedPersonas = Array.from(
-          new Set([
-            ...playedPersonasThisMonth,
-            ...poolPersonas
-          ])
-        );
+    // Pre-generate questions when buffer is getting low (threshold: 8)
+    // Generate up to 3 in parallel to stay well ahead of the player
+    const BUFFER_THRESHOLD = 8;
+    const MAX_PREFETCH = 3;
+    if (eligibleCached.length < BUFFER_THRESHOLD) {
+      const prefetchCount = Math.min(MAX_PREFETCH, BUFFER_THRESHOLD - eligibleCached.length);
+      console.log(`[game-generate] Cache pool buffer low (${eligibleCached.length} < ${BUFFER_THRESHOLD}). Pre-pulling ${prefetchCount} new persona(s)...`);
 
-        const trivia = await generateTwoTruthsAndALie(category, age, allExcludedPersonas, difficulty);
-        
-        console.log(`[game-generate] Pre-pulled new persona: "${trivia.persona}". Adding to trivia_pool cache for other users.`);
-        
-        // Save to cache pool
-        const insertRes = await query(
-          `INSERT INTO trivia_pool (category, age_group, persona, fact_1, fact_2, fact_3, lie_index, difficulty)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-          [
-            category,
-            ageGroup,
-            trivia.persona,
-            trivia.facts[0],
-            trivia.facts[1],
-            trivia.facts[2],
-            trivia.lieIndex,
-            difficulty
-          ]
-        );
+      const poolPersonas = poolQuestions.map((q) => q.persona);
+      const allExcludedPersonas = Array.from(
+        new Set([
+          ...playedPersonasThisMonth,
+          ...poolPersonas
+        ])
+      );
 
-        if (insertRes.rows.length > 0) {
-          eligibleCached.push(insertRes.rows[0]);
+      const prefetchPromises = Array.from({ length: prefetchCount }, async (_, i) => {
+        try {
+          // Each prefetch excludes personas from prior prefetch attempts
+          const excludeForThis = [...allExcludedPersonas];
+          const trivia = await generateTwoTruthsAndALie(category, age, excludeForThis, difficulty);
+          console.log(`[game-generate] Pre-pulled persona ${i + 1}/${prefetchCount}: "${trivia.persona}"`);
+
+          const insertRes = await query(
+            `INSERT INTO trivia_pool (category, age_group, persona, fact_1, fact_2, fact_3, lie_index, difficulty)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+            [category, ageGroup, trivia.persona, trivia.facts[0], trivia.facts[1], trivia.facts[2], trivia.lieIndex, difficulty]
+          );
+
+          if (insertRes.rows.length > 0) {
+            eligibleCached.push(insertRes.rows[0]);
+            allExcludedPersonas.push(trivia.persona);
+          }
+        } catch (genErr) {
+          console.error(`[game-generate] Prefetch ${i + 1} failed:`, genErr);
         }
-      } catch (genErr) {
-        console.error('[game-generate] Proactive pool pre-pull failed:', genErr);
+      });
+
+      // Wait for the first one (needed for serving), fire the rest in background
+      await prefetchPromises[0];
+      if (prefetchPromises.length > 1) {
+        Promise.allSettled(prefetchPromises.slice(1)).catch(() => {});
       }
     }
 
