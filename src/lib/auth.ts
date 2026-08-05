@@ -8,9 +8,16 @@ function getKey() {
   return new TextEncoder().encode(secret);
 }
 
-export async function signJWT(payload: { userId: number; username: string }): Promise<string> {
+export interface JWTPayload {
+  userId: number;
+  username: string;
+  isGuest?: boolean;
+  age?: number;
+}
+
+export async function signJWT(payload: JWTPayload): Promise<string> {
   const key = getKey();
-  return await new SignJWT(payload)
+  return await new SignJWT(payload as unknown as Record<string, unknown>)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('24h')
@@ -19,7 +26,7 @@ export async function signJWT(payload: { userId: number; username: string }): Pr
     .sign(key);
 }
 
-export async function verifyJWT(token: string): Promise<{ userId: number; username: string } | null> {
+export async function verifyJWT(token: string): Promise<JWTPayload | null> {
   try {
     const key = getKey();
     const { payload } = await jwtVerify(token, key, {
@@ -27,13 +34,13 @@ export async function verifyJWT(token: string): Promise<{ userId: number; userna
       issuer: 'two-truths-and-a-lie',
       audience: 'two-truths-and-a-lie',
     });
-    return payload as { userId: number; username: string };
+    return payload as unknown as JWTPayload;
   } catch {
     return null;
   }
 }
 
-export async function getUserFromRequest(req: Request): Promise<{ userId: number; username: string } | null> {
+export async function getUserFromRequest(req: Request): Promise<JWTPayload | null> {
   try {
     const cookieHeader = req.headers.get('cookie') || '';
     const cookies = Object.fromEntries(

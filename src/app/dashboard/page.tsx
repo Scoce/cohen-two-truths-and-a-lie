@@ -11,6 +11,7 @@ interface User {
   username: string;
   score: number;
   age: number;
+  isGuest?: boolean;
 }
 
 interface Category {
@@ -54,6 +55,49 @@ export default function Dashboard() {
   const [activeLeaderboardTab, setActiveLeaderboardTab] = useState<'Children' | 'Teens' | 'Adults'>('Adults');
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [showAchievementsModal, setShowAchievementsModal] = useState(false);
+
+  // Save Account modal for guests
+  const [showSaveAccountModal, setShowSaveAccountModal] = useState(false);
+  const [saveUsername, setSaveUsername] = useState('');
+  const [savePassword, setSavePassword] = useState('');
+  const [saveError, setSaveError] = useState('');
+  const [saveLoading, setSaveLoading] = useState(false);
+
+  const handleSaveAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaveError('');
+    setSaveLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: saveUsername.trim(),
+          password: savePassword,
+          age: user?.age || 10,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setSaveError(data.error || 'Failed to save account');
+      } else {
+        if (user) {
+          setUser({ ...user, username: saveUsername.trim(), isGuest: false });
+        }
+        setShowSaveAccountModal(false);
+        setSaveUsername('');
+        setSavePassword('');
+        alert('Account saved! Your high scores and achievements are now preserved.');
+      }
+    } catch (err) {
+      console.error(err);
+      setSaveError('Network error. Please try again.');
+    } finally {
+      setSaveLoading(false);
+    }
+  };
 
   const [difficulty, setDifficulty] = useState<string>('Medium');
 
@@ -322,6 +366,46 @@ export default function Dashboard() {
           )}
         </header>
 
+        {/* Guest Banner */}
+        {user?.isGuest && (
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(168, 85, 247, 0.25) 100%)',
+            border: '1px solid rgba(168, 85, 247, 0.4)',
+            borderRadius: '12px',
+            padding: '0.85rem 1.25rem',
+            margin: '1.25rem 0 0.5rem 0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '0.75rem',
+            backdropFilter: 'blur(8px)',
+          }}>
+            <div>
+              <strong style={{ color: '#fff' }}>Playing as Guest:</strong>
+              <span style={{ color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>
+                Save your high scores and badges permanently on the leaderboard!
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowSaveAccountModal(true)}
+              style={{
+                padding: '0.5rem 1rem',
+                borderRadius: '6px',
+                border: 'none',
+                background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                color: '#fff',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                boxShadow: '0 2px 10px rgba(168, 85, 247, 0.3)',
+              }}
+            >
+              ⭐ Save Free Account
+            </button>
+          </div>
+        )}
+
         {/* Welcome Section */}
         <div className={styles.welcomeSection}>
           <h2 className={styles.welcomeTitle}>Choose a Fun Category!</h2>
@@ -492,6 +576,88 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save Account Modal */}
+      {showSaveAccountModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowSaveAccountModal(false)}>
+          <div className={`${styles.modalContent} glass-panel`} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px' }}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>Save Free Account</h3>
+              <button 
+                className={styles.closeBtn}
+                onClick={() => setShowSaveAccountModal(false)}
+              >
+                &times;
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveAccount} className={styles.modalBody} style={{ gap: '1rem', display: 'flex', flexDirection: 'column' }}>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                Create your username and password below. All your current scores and earned badges will be saved permanently!
+              </p>
+
+              {saveError && <div style={{ color: '#ef4444', fontSize: '0.85rem' }}>{saveError}</div>}
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem', color: '#fff' }}>Username</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Choose a username"
+                  value={saveUsername}
+                  onChange={(e) => setSaveUsername(e.target.value)}
+                  disabled={saveLoading}
+                  style={{
+                    width: '100%',
+                    padding: '0.6rem 0.8rem',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    background: 'rgba(0,0,0,0.3)',
+                    color: '#fff',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem', color: '#fff' }}>Password</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Create a password (min 6 chars)"
+                  value={savePassword}
+                  onChange={(e) => setSavePassword(e.target.value)}
+                  disabled={saveLoading}
+                  style={{
+                    width: '100%',
+                    padding: '0.6rem 0.8rem',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    background: 'rgba(0,0,0,0.3)',
+                    color: '#fff',
+                  }}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={saveLoading}
+                style={{
+                  padding: '0.75rem',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                  color: '#fff',
+                  fontWeight: 'bold',
+                  cursor: saveLoading ? 'not-allowed' : 'pointer',
+                  marginTop: '0.5rem',
+                }}
+              >
+                {saveLoading ? 'Saving...' : 'Save Account & Keep Progress'}
+              </button>
+            </form>
           </div>
         </div>
       )}

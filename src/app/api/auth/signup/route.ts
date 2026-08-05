@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { checkRateLimit, getClientIp, AUTH_RATE_LIMIT } from '@/lib/rateLimit';
+import { getUserFromRequest, signJWT } from '@/lib/auth';
 
 export async function POST(req: Request) {
   try {
@@ -70,20 +71,53 @@ export async function POST(req: Request) {
       }
     }
 
+    // Check if client is currently in a guest session
+    const existingGuest = await getUserFromRequest(req);
+    const isGuestSession = existingGuest && existingGuest.isGuest;
+
     // Hash the password
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    // Insert user into database
     try {
-      await query(
-        'INSERT INTO users (username, password_hash, age) VALUES ($1, $2, $3)',
-        [trimmedUsername, passwordHash, userAge]
+      let createdUserId: number;
+
+      if (isGuestSession) {
+        // Upgrade existing guest user record to permanent registered user
+        const updateRes = await query(
+          'UPDATE users SET username = $1, password_hash = $2, age = $3 WHERE id = $4 RETURNING id',
+          [trimmedUsername, passwordHash, userAge, existingGuest.userId]
+        );
+        createdUserId = updateRes.rows[0].id;
+      } else {
+        // Insert brand new user into database
+        const insertRes = await query(
+          'INSERT INTO users (username, password_hash, age) VALUES ($1, $2, $3) RETURNING id',
+          [trimmedUsername, passwordHash, userAge]
+        );
+        createdUserId = insertRes.rows[0].id;
+      }
+
+      // Automatically sign in the user
+      const token = await signJWT({
+        userId: createdUserId,
+        username: trimmedUsername,
+        isGuest: false,
+        age: userAge,
+      });
+
+      const response = NextResponse.json(
+        { message: isGuestSession ? 'Account saved successfully!' : 'User created successfully', userId: createdUserId },
+        { status: isGuestSession ? 200 : 201 }
       );
-      return NextResponse.json(
-        { message: 'User created successfully' },
-        { status: 201 }
+
+      const isProd = process.env.NODE_ENV === 'production';
+      response.headers.set(
+        'Set-Cookie',
+        `session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400;${isProd ? ' Secure;' : ''}`
       );
+
+      return response;
     } catch (dbErr: unknown) {
       const pgError = dbErr as { code?: string };
       if (pgError.code === '23505') {

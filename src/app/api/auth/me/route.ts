@@ -30,6 +30,7 @@ export async function GET(req: Request) {
         username: user.username,
         score: user.score,
         age: user.age,
+        isGuest: !!sessionUser.isGuest,
         createdAt: user.created_at,
       },
     });

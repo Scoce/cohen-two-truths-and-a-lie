@@ -16,21 +16,34 @@ export default function Home() {
   const [success, setSuccess] = useState('');
   const [authChecking, setAuthChecking] = useState(true);
 
-  // Check if user is already logged in
+  // Automatically route to game dashboard without requiring any login prompt
   useEffect(() => {
-    async function checkAuth() {
+    async function initSessionAndRedirect() {
       try {
         const res = await fetch('/api/auth/me');
         if (res.ok) {
           router.push('/dashboard');
+          return;
+        }
+
+        // Auto-initialize a guest session so user lands straight into the game
+        const guestRes = await fetch('/api/auth/guest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ age: 10 }),
+        });
+
+        if (guestRes.ok) {
+          router.push('/dashboard');
+        } else {
+          setAuthChecking(false);
         }
       } catch (err) {
-        console.error('Failed to verify session', err);
-      } finally {
+        console.error('Failed to initialize session', err);
         setAuthChecking(false);
       }
     }
-    checkAuth();
+    initSessionAndRedirect();
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,6 +91,34 @@ export default function Home() {
     }
   };
 
+  const handleGuestPlay = async () => {
+    setError('');
+    setSuccess('');
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/auth/guest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ age: parseInt(age, 10) || 10 }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Failed to start guest session');
+      } else {
+        setSuccess('Starting guest session...');
+        router.push('/dashboard');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Connection error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (authChecking) {
     return (
       <CityBackground>
@@ -103,6 +144,58 @@ export default function Home() {
             <p className={styles.subtitle}>Two Truths and a Lie • AI Edition</p>
           </div>
 
+          {/* Direct Instant Guest Play Hero Button */}
+          <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+            <div className={styles.formGroup} style={{ marginBottom: '0.75rem', textAlign: 'left' }}>
+              <label htmlFor="guestAge" className={styles.label}>
+                Who is playing?
+              </label>
+              <select
+                id="guestAge"
+                className={styles.input}
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                disabled={loading}
+              >
+                <option value="8">Children (Under 12)</option>
+                <option value="14">Teens (12-17)</option>
+                <option value="25">Adults (18+)</option>
+              </select>
+            </div>
+            <button
+              type="button"
+              onClick={handleGuestPlay}
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '0.85rem',
+                fontSize: '1.1rem',
+                fontWeight: 'bold',
+                color: '#fff',
+                background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                boxShadow: '0 4px 14px rgba(168, 85, 247, 0.4)',
+                transition: 'transform 0.15s ease, opacity 0.15s ease',
+              }}
+            >
+              🚀 Play Now as Guest (No Login Required)
+            </button>
+          </div>
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            margin: '1.25rem 0',
+            color: 'var(--text-secondary)',
+            fontSize: '0.85rem'
+          }}>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
+            <span style={{ padding: '0 0.75rem' }}>or sign in to save scores</span>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
+          </div>
+
           <div className={styles.tabs}>
             <button
               type="button"
@@ -111,7 +204,6 @@ export default function Home() {
                 setIsLogin(true);
                 setError('');
                 setSuccess('');
-                setAge('8');
               }}
               disabled={loading}
             >
@@ -124,7 +216,6 @@ export default function Home() {
                 setIsLogin(false);
                 setError('');
                 setSuccess('');
-                setAge('8');
               }}
               disabled={loading}
             >
@@ -169,26 +260,6 @@ export default function Home() {
                 required
               />
             </div>
-
-            {!isLogin && (
-              <div className={styles.formGroup}>
-                <label htmlFor="age" className={styles.label}>
-                  Who is playing?
-                </label>
-                <select
-                  id="age"
-                  className={styles.input}
-                  value={age}
-                  onChange={(e) => setAge(e.target.value)}
-                  disabled={loading}
-                  required
-                >
-                  <option value="8">Children (Under 12)</option>
-                  <option value="14">Teens (12-17)</option>
-                  <option value="25">Adults (18+)</option>
-                </select>
-              </div>
-            )}
 
             <button
               type="submit"
