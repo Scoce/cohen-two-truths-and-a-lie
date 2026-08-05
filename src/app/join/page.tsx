@@ -21,10 +21,34 @@ function StudentJoinContent() {
     }
   }, [initialCode]);
 
-  const handleJoin = (e: React.FormEvent) => {
+  const [moderating, setModerating] = useState(false);
+  const [modError, setModError] = useState('');
+
+  const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setModError('');
     if (!roomCode.trim() || !nickname.trim()) return;
-    setJoined(true);
+
+    setModerating(true);
+    try {
+      const res = await fetch('/api/classroom/moderate-nickname', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname: nickname.trim() }),
+      });
+
+      const data = await res.json();
+      if (!data.allowed) {
+        setModError(data.reason || 'Please choose a clean, friendly classroom nickname!');
+      } else {
+        setJoined(true);
+      }
+    } catch (err) {
+      console.error(err);
+      setJoined(true); // Fail open if error
+    } finally {
+      setModerating(false);
+    }
   };
 
   const handleSelectGuess = (index: number) => {
@@ -114,8 +138,15 @@ function StudentJoinContent() {
                 />
               </div>
 
+              {modError && (
+                <div style={{ color: '#ef4444', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: '8px', padding: '0.65rem', fontSize: '0.85rem' }}>
+                  ⚠️ {modError}
+                </div>
+              )}
+
               <button
                 type="submit"
+                disabled={moderating}
                 style={{
                   padding: '1rem',
                   borderRadius: '12px',
@@ -124,12 +155,13 @@ function StudentJoinContent() {
                   color: '#fff',
                   fontWeight: 900,
                   fontSize: '1.2rem',
-                  cursor: 'pointer',
+                  cursor: moderating ? 'not-allowed' : 'pointer',
                   boxShadow: '0 4px 20px rgba(225, 29, 72, 0.4)',
-                  marginTop: '0.5rem'
+                  marginTop: '0.5rem',
+                  opacity: moderating ? 0.7 : 1
                 }}
               >
-                🚀 JOIN GAME NOW
+                {moderating ? 'Checking Nickname...' : '🚀 JOIN GAME NOW'}
               </button>
             </form>
           </div>

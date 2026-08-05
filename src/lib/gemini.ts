@@ -1250,3 +1250,76 @@ Note: The "facts" array MUST contain exactly 3 items. The "lieIndex" MUST corres
     return difficultyFiltered[randomIndex];
   }
 }
+
+export async function moderateStudentNickname(nickname: string): Promise<{ allowed: boolean; reason?: string }> {
+  const trimmed = nickname.trim();
+  if (trimmed.length < 2 || trimmed.length > 15) {
+    return { allowed: false, reason: 'Nickname must be between 2 and 15 characters long.' };
+  }
+
+  // 1. Instant Local Blocklist (crude numbers, profanity, and disruptive Gen Alpha brainrot)
+  const lower = trimmed.toLowerCase();
+  
+  // Blocked crude/meme numbers
+  if (/\b(67|69|420|88|1488|666)\b/.test(lower) || lower.includes('67') || lower.includes('69') || lower.includes('420')) {
+    return { allowed: false, reason: 'Numbers like 67, 69, or 420 are not allowed in classroom nicknames.' };
+  }
+
+  // Blocked Gen Alpha brainrot / crude slang
+  const BLOCKED_TERMS = [
+    'skibidi', 'gyatt', 'gyat', 'rizz', 'rizzler', 'sigma', 'fanum', 
+    'mewing', 'ohio', 'edge', 'edging', 'kai cenat', 'bitch', 'shit', 
+    'fuck', 'crap', 'ass', 'dick', 'pussy', 'nigger', 'nigga', 'fag', 
+    'retard', 'bastard', 'slut', 'whore', 'sex', 'penis', 'vagina'
+  ];
+
+  for (const term of BLOCKED_TERMS) {
+    if (lower.includes(term)) {
+      return { allowed: false, reason: 'Please choose a clean, friendly classroom nickname.' };
+    }
+  }
+
+  // 2. AI Gemini Moderation if API client is available
+  if (aiClient) {
+    try {
+      const prompt = `You are a strict K-12 school classroom moderator. Evaluate the following student nickname for a live classroom trivia game: "${trimmed}".
+
+RULES FOR REJECTION:
+1. Reject if it contains ANY profanity, cuss words, sexual/crude references, slurs, or leet-speak evasions.
+2. Reject if it contains crude or disruptive meme numbers (e.g. 67, 69, 420).
+3. Reject if it contains Gen Alpha brainrot / disruptive meme slang (e.g. skibidi, gyatt, rizzler, sigma, fanum, mewing, Ohio, etc.).
+4. Reject if it contains insults, bullying, or violence.
+
+Return raw JSON only:
+{
+  "allowed": true/false,
+  "reason": "Brief polite reason if rejected"
+}`;
+
+      const response = await aiClient.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          maxOutputTokens: 100,
+          temperature: 0.1,
+        },
+      });
+
+      const text = response.text;
+      if (text) {
+        const result = JSON.parse(text.trim());
+        if (typeof result.allowed === 'boolean') {
+          return {
+            allowed: result.allowed,
+            reason: result.allowed ? undefined : (result.reason || 'Please choose a clean classroom nickname.')
+          };
+        }
+      }
+    } catch (err) {
+      console.error('[gemini-moderation] AI moderation check failed, relying on local filter:', err);
+    }
+  }
+
+  return { allowed: true };
+}
