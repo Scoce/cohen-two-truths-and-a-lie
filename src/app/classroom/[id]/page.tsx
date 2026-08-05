@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Play, Eye, EyeOff, RotateCcw, HelpCircle, CheckCircle2, XCircle } from 'lucide-react';
+import { ArrowLeft, Play, Eye, EyeOff, RotateCcw, HelpCircle, CheckCircle2, XCircle, QrCode, Users, Zap, Award } from 'lucide-react';
 import CityBackground from '@/components/CityBackground';
 
 interface GameData {
@@ -16,6 +16,14 @@ interface GameData {
   difficulty: string;
 }
 
+interface StudentSubmission {
+  studentName: string;
+  guessedIndex: number;
+  secondsTaken: number;
+  isCorrect: boolean;
+  score: number;
+}
+
 export default function ClassroomPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const gameId = resolvedParams.id;
@@ -24,14 +32,24 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
   const [game, setGame] = useState<GameData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Mode Selection: 'teacher' (Teacher-led) | 'contest' (Live 10s Speed Contest with QR)
+  const [classroomMode, setClassroomMode] = useState<'teacher' | 'contest'>('teacher');
   
-  // Smartboard presentation state
+  // Teacher-Led Mode State
   const [revealed, setRevealed] = useState(false);
   const [selectedLie, setSelectedLie] = useState<number | null>(null);
   const [hint, setHint] = useState<string | null>(null);
   const [loadingHint, setLoadingHint] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState<number>(30);
   const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
+
+  // Live 10s Speed Contest State
+  const [contestTimer, setContestTimer] = useState<number>(10);
+  const [contestActive, setContestActive] = useState<boolean>(false);
+  const [roomCode] = useState<string>(() => String(Math.floor(1000 + Math.random() * 9000)));
+  const [studentLeaderboard, setStudentLeaderboard] = useState<StudentSubmission[]>([]);
+  const [mockSimulating, setMockSimulating] = useState<boolean>(false);
 
   useEffect(() => {
     async function fetchGame() {
@@ -52,7 +70,7 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
     fetchGame();
   }, [gameId]);
 
-  // Timer countdown hook
+  // Mode A: Teacher Manual Timer
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isTimerRunning && timerSeconds > 0) {
@@ -64,6 +82,44 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
     }
     return () => clearInterval(interval);
   }, [isTimerRunning, timerSeconds]);
+
+  // Mode B: 10s Contest Countdown Timer & Auto-Reveal
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (contestActive && contestTimer > 0) {
+      interval = setInterval(() => {
+        setContestTimer((prev) => prev - 1);
+      }, 1000);
+    } else if (contestActive && contestTimer === 0) {
+      setContestActive(false);
+      setRevealed(true);
+    }
+    return () => clearInterval(interval);
+  }, [contestActive, contestTimer]);
+
+  const handleStartContest = () => {
+    setContestTimer(10);
+    setContestActive(true);
+    setRevealed(false);
+
+    // Simulate class responses for demonstration if no live students are connected
+    if (studentLeaderboard.length === 0 && !mockSimulating) {
+      setMockSimulating(true);
+      const mockStudents = ['Alex M.', 'Jordan K.', 'Taylor S.', 'Sam P.', 'Riley B.'];
+      setTimeout(() => {
+        if (!game) return;
+        const submissions: StudentSubmission[] = mockStudents.map((name) => {
+          const seconds = Math.floor(Math.random() * 8) + 1;
+          const guessedIndex = Math.random() > 0.3 ? game.lie_index : (game.lie_index + 1) % 3;
+          const isCorrect = guessedIndex === game.lie_index;
+          const score = isCorrect ? Math.max(200, 1000 - seconds * 80) : 0;
+          return { studentName: name, guessedIndex, secondsTaken: seconds, isCorrect, score };
+        }).sort((a, b) => b.score - a.score);
+
+        setStudentLeaderboard(submissions);
+      }, 3000);
+    }
+  };
 
   const handleFetchHint = async () => {
     if (hint || loadingHint) return;
@@ -92,7 +148,8 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
     setSelectedLie(null);
     setHint(null);
     setTimerSeconds(30);
-    setIsTimerRunning(false);
+    setContestTimer(10);
+    setContestActive(false);
 
     try {
       const res = await fetch('/api/game/generate', {
@@ -137,22 +194,22 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
       <div style={{
         minHeight: '100vh',
         width: '100%',
-        padding: '2rem',
+        padding: '1.5rem 2rem',
         display: 'flex',
         flexDirection: 'column',
         boxSizing: 'border-box'
       }}>
-        {/* Smartboard Top Control Bar */}
+        {/* Top Control Header */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: '2rem',
+          marginBottom: '1.5rem',
           background: 'rgba(15, 23, 42, 0.75)',
           backdropFilter: 'blur(12px)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
           borderRadius: '16px',
-          padding: '1rem 1.5rem'
+          padding: '0.85rem 1.5rem'
         }}>
           <button
             onClick={() => router.push('/dashboard')}
@@ -164,82 +221,136 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
               color: '#fff',
               border: 'none',
               borderRadius: '8px',
-              padding: '0.6rem 1rem',
-              fontSize: '1rem',
+              padding: '0.55rem 1rem',
+              fontSize: '0.95rem',
               cursor: 'pointer',
               fontWeight: 600
             }}
           >
-            <ArrowLeft size={20} /> Exit Classroom Mode
+            <ArrowLeft size={18} /> Exit Smartboard
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-            {/* Timer */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <span style={{
-                fontSize: '1.75rem',
+          {/* Mode Switcher Tabs */}
+          <div style={{ display: 'flex', background: 'rgba(0, 0, 0, 0.4)', borderRadius: '10px', padding: '4px' }}>
+            <button
+              onClick={() => { setClassroomMode('teacher'); setRevealed(false); }}
+              style={{
+                padding: '0.5rem 1.25rem',
+                borderRadius: '8px',
+                border: 'none',
+                background: classroomMode === 'teacher' ? 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' : 'transparent',
+                color: '#fff',
                 fontWeight: 'bold',
-                fontFamily: 'monospace',
-                color: timerSeconds <= 5 ? '#ef4444' : '#a855f7'
-              }}>
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              <Users size={16} /> Mode A: Teacher-Led
+            </button>
+            <button
+              onClick={() => { setClassroomMode('contest'); setRevealed(false); }}
+              style={{
+                padding: '0.5rem 1.25rem',
+                borderRadius: '8px',
+                border: 'none',
+                background: classroomMode === 'contest' ? 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)' : 'transparent',
+                color: '#fff',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              <Zap size={16} /> Mode B: Live QR 10s Speed Contest
+            </button>
+          </div>
+
+          {/* Mode Specific Top Timer */}
+          {classroomMode === 'teacher' ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <span style={{ fontSize: '1.5rem', fontWeight: 'bold', fontFamily: 'monospace', color: timerSeconds <= 5 ? '#ef4444' : '#a855f7' }}>
                 00:{timerSeconds < 10 ? `0${timerSeconds}` : timerSeconds}
               </span>
               <button
                 onClick={() => setIsTimerRunning(!isTimerRunning)}
-                style={{
-                  padding: '0.5rem 0.85rem',
-                  borderRadius: '8px',
-                  background: isTimerRunning ? '#e11d48' : '#22c55e',
-                  color: '#fff',
-                  border: 'none',
-                  fontWeight: 'bold',
-                  cursor: 'pointer'
-                }}
+                style={{ padding: '0.4rem 0.75rem', borderRadius: '6px', background: isTimerRunning ? '#e11d48' : '#22c55e', color: '#fff', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.85rem' }}
               >
-                {isTimerRunning ? 'Pause Timer' : 'Start Timer'}
-              </button>
-              <button
-                onClick={() => { setTimerSeconds(30); setIsTimerRunning(false); }}
-                style={{
-                  padding: '0.5rem',
-                  borderRadius: '8px',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  color: '#fff',
-                  border: 'none',
-                  cursor: 'pointer'
-                }}
-                title="Reset Timer"
-              >
-                <RotateCcw size={18} />
+                {isTimerRunning ? 'Pause' : 'Start'}
               </button>
             </div>
-          </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <span style={{ fontSize: '1.75rem', fontWeight: '900', color: contestTimer <= 3 ? '#ef4444' : '#f59e0b', fontFamily: 'monospace' }}>
+                ⏱️ {contestTimer}s
+              </span>
+              <button
+                onClick={handleStartContest}
+                disabled={contestActive}
+                style={{ padding: '0.55rem 1.2rem', borderRadius: '8px', background: contestActive ? 'rgba(255,255,255,0.2)' : '#e11d48', color: '#fff', border: 'none', fontWeight: 'bold', cursor: contestActive ? 'not-allowed' : 'pointer', fontSize: '0.9rem' }}
+              >
+                {contestActive ? 'Contest Running...' : '🚀 START 10s CONTEST'}
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Persona Banner */}
+        {/* Persona Banner & Mode Instructions */}
         <div style={{
           textAlign: 'center',
-          marginBottom: '2rem',
+          marginBottom: '1.5rem',
           background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%)',
           border: '1px solid rgba(168, 85, 247, 0.3)',
-          borderRadius: '20px',
-          padding: '1.5rem 2rem',
-          backdropFilter: 'blur(12px)'
+          borderRadius: '16px',
+          padding: '1.25rem 2rem',
+          backdropFilter: 'blur(12px)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '1rem'
         }}>
-          <span style={{ color: '#a855f7', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', fontSize: '1rem' }}>
-            Classroom Challenge • {game.category.toUpperCase()}
-          </span>
-          <h1 style={{ fontSize: '3rem', fontWeight: 900, color: '#fff', margin: '0.5rem 0 0 0', textShadow: '0 0 20px rgba(168, 85, 247, 0.5)' }}>
-            {game.persona}
-          </h1>
+          <div style={{ textAlign: 'left' }}>
+            <span style={{ color: '#a855f7', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', fontSize: '0.85rem' }}>
+              {game.category.toUpperCase()} • {game.difficulty || 'Medium'}
+            </span>
+            <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: '#fff', margin: '0.2rem 0 0 0', textShadow: '0 0 15px rgba(168, 85, 247, 0.5)' }}>
+              {game.persona}
+            </h1>
+          </div>
+
+          {/* Mode B: Live QR Code Badge for Projector */}
+          {classroomMode === 'contest' && (
+            <div style={{
+              background: 'rgba(0, 0, 0, 0.5)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '12px',
+              padding: '0.75rem 1.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem'
+            }}>
+              <div style={{ background: '#fff', padding: '0.4rem', borderRadius: '8px' }}>
+                <QrCode size={42} color="#000" />
+              </div>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Scan to Join Live</div>
+                <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#f59e0b', letterSpacing: '2px' }}>ROOM #{roomCode}</div>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Statements Display (Smartboard Huge Font Grid) */}
+        {/* Statements Display Grid */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: '1.5rem',
-          marginBottom: '2rem',
+          gap: '1.25rem',
+          marginBottom: '1.5rem',
           flex: 1
         }}>
           {statements.map((text, idx) => {
@@ -267,8 +378,8 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
                 key={idx}
                 onClick={() => !revealed && setSelectedLie(idx)}
                 style={{
-                  padding: '2rem',
-                  borderRadius: '18px',
+                  padding: '1.5rem 2rem',
+                  borderRadius: '16px',
                   background: bgColor,
                   border: `3px solid ${borderColor}`,
                   backdropFilter: 'blur(12px)',
@@ -276,38 +387,37 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
                   transition: 'all 0.2s ease',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '1.5rem',
-                  boxShadow: isSelected ? '0 0 25px rgba(168, 85, 247, 0.4)' : 'none'
+                  gap: '1.5rem'
                 }}
               >
                 <div style={{
-                  width: '54px',
-                  height: '54px',
+                  width: '48px',
+                  height: '48px',
                   borderRadius: '50%',
                   background: isThisLie && revealed ? '#ef4444' : 'rgba(255, 255, 255, 0.1)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '1.75rem',
+                  fontSize: '1.5rem',
                   fontWeight: 900,
                   color: '#fff',
                   flexShrink: 0
                 }}>
                   {idx + 1}
                 </div>
-                <div style={{ fontSize: '1.85rem', fontWeight: 600, color: '#fff', lineHeight: 1.4, flex: 1 }}>
+                <div style={{ fontSize: '1.6rem', fontWeight: 600, color: '#fff', lineHeight: 1.4, flex: 1 }}>
                   {text}
                 </div>
 
                 {revealed && (
                   <div>
                     {isThisLie ? (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ef4444', fontWeight: 800, fontSize: '1.4rem' }}>
-                        <XCircle size={32} /> THE LIE!
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ef4444', fontWeight: 800, fontSize: '1.25rem' }}>
+                        <XCircle size={28} /> THE LIE!
                       </span>
                     ) : (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#22c55e', fontWeight: 800, fontSize: '1.4rem' }}>
-                        <CheckCircle2 size={32} /> TRUE
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#22c55e', fontWeight: 800, fontSize: '1.25rem' }}>
+                        <CheckCircle2 size={28} /> TRUE
                       </span>
                     )}
                   </div>
@@ -317,16 +427,44 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
           })}
         </div>
 
-        {/* Hint Box (if toggled) */}
+        {/* Mode B: Live Speed Leaderboard (Surfaced after 10s timer ends) */}
+        {classroomMode === 'contest' && revealed && studentLeaderboard.length > 0 && (
+          <div style={{
+            background: 'rgba(15, 23, 42, 0.85)',
+            border: '1px solid rgba(234, 179, 8, 0.4)',
+            borderRadius: '16px',
+            padding: '1.25rem 1.75rem',
+            marginBottom: '1.5rem',
+            backdropFilter: 'blur(12px)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#f59e0b', fontSize: '1.2rem', fontWeight: 800, marginBottom: '0.75rem' }}>
+              <Award size={24} /> LIVE STUDENT SPEED LEADERBOARD
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+              {studentLeaderboard.slice(0, 5).map((entry, index) => (
+                <div key={index} style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '0.65rem 1rem', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontWeight: 'bold', color: index === 0 ? '#f59e0b' : '#fff' }}>
+                    #{index + 1} {entry.studentName}
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: entry.isCorrect ? '#22c55e' : '#ef4444' }}>
+                    {entry.isCorrect ? `${entry.score} pts (${entry.secondsTaken}s)` : 'Wrong'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Hint Box */}
         {hint && (
           <div style={{
-            padding: '1.25rem 1.75rem',
+            padding: '1rem 1.5rem',
             background: 'rgba(234, 179, 8, 0.15)',
             border: '2px solid rgba(234, 179, 8, 0.4)',
-            borderRadius: '16px',
-            marginBottom: '2rem',
+            borderRadius: '14px',
+            marginBottom: '1.5rem',
             color: '#fde047',
-            fontSize: '1.4rem',
+            fontSize: '1.25rem',
             textAlign: 'center',
             backdropFilter: 'blur(8px)'
           }}>
@@ -334,28 +472,28 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
           </div>
         )}
 
-        {/* Smartboard Bottom Action Bar */}
+        {/* Bottom Control Action Bar */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '1.5rem',
+          gap: '1rem',
           background: 'rgba(15, 23, 42, 0.85)',
           backdropFilter: 'blur(12px)',
-          padding: '1.25rem 2rem',
-          borderRadius: '20px',
+          padding: '1rem 1.75rem',
+          borderRadius: '16px',
           border: '1px solid rgba(255, 255, 255, 0.1)'
         }}>
           <button
             onClick={handleFetchHint}
             disabled={loadingHint || !!hint}
             style={{
-              padding: '0.85rem 1.5rem',
-              borderRadius: '12px',
+              padding: '0.75rem 1.25rem',
+              borderRadius: '10px',
               border: 'none',
               background: 'rgba(234, 179, 8, 0.2)',
               color: '#fde047',
-              fontSize: '1.2rem',
+              fontSize: '1.05rem',
               fontWeight: 700,
               cursor: hint ? 'default' : 'pointer',
               display: 'flex',
@@ -363,49 +501,49 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
               gap: '0.5rem'
             }}
           >
-            <HelpCircle size={24} /> {hint ? 'Hint Revealed' : loadingHint ? 'Asking AI...' : 'Reveal Riddle Hint'}
+            <HelpCircle size={20} /> {hint ? 'Hint Revealed' : loadingHint ? 'Asking AI...' : 'Reveal Riddle Hint'}
           </button>
 
           <div style={{ display: 'flex', gap: '1rem' }}>
             <button
               onClick={() => setRevealed(!revealed)}
               style={{
-                padding: '0.85rem 2rem',
-                borderRadius: '12px',
+                padding: '0.75rem 1.5rem',
+                borderRadius: '10px',
                 border: 'none',
                 background: revealed ? 'rgba(255, 255, 255, 0.15)' : 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)',
                 color: '#fff',
-                fontSize: '1.25rem',
+                fontSize: '1.1rem',
                 fontWeight: 800,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.75rem',
-                boxShadow: revealed ? 'none' : '0 0 20px rgba(225, 29, 72, 0.4)'
+                gap: '0.5rem',
+                boxShadow: revealed ? 'none' : '0 0 15px rgba(225, 29, 72, 0.4)'
               }}
             >
-              {revealed ? <EyeOff size={24} /> : <Eye size={24} />}
+              {revealed ? <EyeOff size={20} /> : <Eye size={20} />}
               {revealed ? 'Hide Lie' : 'REVEAL LIE TO CLASS'}
             </button>
 
             <button
               onClick={handleNextRandomRound}
               style={{
-                padding: '0.85rem 2rem',
-                borderRadius: '12px',
+                padding: '0.75rem 1.75rem',
+                borderRadius: '10px',
                 border: 'none',
                 background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
                 color: '#fff',
-                fontSize: '1.25rem',
+                fontSize: '1.1rem',
                 fontWeight: 800,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.75rem',
-                boxShadow: '0 0 20px rgba(168, 85, 247, 0.4)'
+                gap: '0.5rem',
+                boxShadow: '0 0 15px rgba(168, 85, 247, 0.4)'
               }}
             >
-              <Play size={24} /> Next Classroom Round
+              <Play size={20} /> Next Round
             </button>
           </div>
         </div>

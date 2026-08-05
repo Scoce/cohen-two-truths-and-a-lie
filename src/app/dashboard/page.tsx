@@ -384,7 +384,7 @@ export default function Dashboard() {
             <div>
               <strong style={{ color: '#fff' }}>Playing as Guest:</strong>
               <span style={{ color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>
-                Save your high scores and badges permanently on the leaderboard!
+                Create a free account to unlock <strong>Smartboard Classroom Mode</strong> (Teacher-Led & Live Student Speed Contests with QR Code)!
               </span>
             </div>
             <button
@@ -401,7 +401,7 @@ export default function Dashboard() {
                 boxShadow: '0 2px 10px rgba(168, 85, 247, 0.3)',
               }}
             >
-              ⭐ Save Free Account
+              🍎 Unlock Classroom Tools
             </button>
           </div>
         )}

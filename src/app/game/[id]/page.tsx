@@ -445,55 +445,26 @@ export default function GameRound() {
             }
           </p>
 
-          {/* Teacher / Classroom Action Bar */}
-          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap', margin: '0.75rem 0 1rem 0' }}>
+          {/* Smartboard Classroom Mode Action */}
+          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', margin: '0.75rem 0 1rem 0' }}>
             <button
-              onClick={() => router.push(`/classroom/${game.gameId}`)}
+              onClick={() => {
+                router.push(`/classroom/${game.gameId}`);
+              }}
               style={{
-                padding: '0.4rem 0.8rem',
-                fontSize: '0.8rem',
+                padding: '0.5rem 1rem',
+                fontSize: '0.85rem',
                 fontWeight: 'bold',
                 color: '#fff',
-                background: 'rgba(99, 102, 241, 0.25)',
-                border: '1px solid rgba(99, 102, 241, 0.5)',
-                borderRadius: '6px',
-                cursor: 'pointer'
+                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.4) 0%, rgba(168, 85, 247, 0.4) 100%)',
+                border: '1px solid rgba(168, 85, 247, 0.6)',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                boxShadow: '0 2px 10px rgba(168, 85, 247, 0.25)',
               }}
-              title="Project on Smartboard"
+              title="Smartboard Classroom Presentation & Live Contest"
             >
-              📺 Classroom Mode
-            </button>
-            <button
-              onClick={() => window.open(`/print/${game.gameId}`, '_blank')}
-              style={{
-                padding: '0.4rem 0.8rem',
-                fontSize: '0.8rem',
-                fontWeight: 'bold',
-                color: '#fff',
-                background: 'rgba(16, 185, 129, 0.25)',
-                border: '1px solid rgba(16, 185, 129, 0.5)',
-                borderRadius: '6px',
-                cursor: 'pointer'
-              }}
-              title="Print Worksheet PDF"
-            >
-              🖨️ Print Worksheet
-            </button>
-            <button
-              onClick={() => window.open(`/api/game/${game.gameId}/export/teach-weave`, '_blank')}
-              style={{
-                padding: '0.4rem 0.8rem',
-                fontSize: '0.8rem',
-                fontWeight: 'bold',
-                color: '#fff',
-                background: 'rgba(168, 85, 247, 0.25)',
-                border: '1px solid rgba(168, 85, 247, 0.5)',
-                borderRadius: '6px',
-                cursor: 'pointer'
-              }}
-              title="Download TeachWeave Activity Package"
-            >
-              📦 TeachWeave Export
+              📺 Smartboard Classroom Mode (Teacher & Live QR Contest)
             </button>
           </div>
           {!showResult && !game.played && (
