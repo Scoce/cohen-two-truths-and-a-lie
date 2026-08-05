@@ -5,6 +5,15 @@ export interface ConnectedStudent {
   joinedAt: number;
 }
 
+export interface StudentSubmission {
+  studentName: string;
+  avatar: string;
+  guessedIndex: number;
+  secondsTaken: number;
+  isCorrect: boolean;
+  score: number;
+}
+
 export interface ClassroomRoom {
   roomCode: string;
   status: 'lobby' | 'in_progress' | 'completed';
@@ -16,6 +25,7 @@ export interface ClassroomRoom {
   currentGameId?: number;
   createdAt: number;
   students: ConnectedStudent[];
+  submissions: StudentSubmission[];
 }
 
 // Global in-memory room storage map (keyed by roomCode)
@@ -47,6 +57,7 @@ export function createRoom(config: {
     currentRound: 1,
     createdAt: Date.now(),
     students: [],
+    submissions: [],
   };
 
   globalRooms.set(config.roomCode, room);
@@ -97,5 +108,23 @@ export function updateRoomStatus(roomCode: string, status: 'lobby' | 'in_progres
     if (currentGameId) {
       room.currentGameId = currentGameId;
     }
+    if (status === 'in_progress') {
+      room.submissions = []; // Clear submissions for new round
+    }
+  }
+}
+
+export function addSubmission(roomCode: string, sub: { studentName: string; avatar: string; guessedIndex: number; secondsTaken: number; isCorrect: boolean; score: number }) {
+  const room = globalRooms.get(roomCode);
+  if (room) {
+    // Replace existing submission if student resubmits in same round
+    const idx = room.submissions.findIndex(s => s.studentName.toLowerCase() === sub.studentName.toLowerCase());
+    if (idx !== -1) {
+      room.submissions[idx] = sub;
+    } else {
+      room.submissions.push(sub);
+    }
+    // Sort submissions by score descending
+    room.submissions.sort((a, b) => b.score - a.score);
   }
 }

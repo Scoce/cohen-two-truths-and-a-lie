@@ -58,10 +58,25 @@ function StudentJoinContent() {
     }
   };
 
-  const handleSelectGuess = (index: number) => {
+  const [joinStartTime, setJoinStartTime] = useState<number>(Date.now());
+
+  const handleSelectGuess = async (index: number) => {
     if (submitted) return;
     setSelectedGuess(index);
     setSubmitted(true);
+    const secondsTaken = Math.max(1, Math.round((Date.now() - joinStartTime) / 1000));
+
+    // Submit student answer to room store
+    fetch(`/api/classroom/rooms/${roomCode}/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        studentName: nickname,
+        avatar: selectedAvatar,
+        guessedIndex: index,
+        secondsTaken,
+      }),
+    }).catch(console.error);
   };
 
   const AVATARS = ['🐶', '🐱', '🦊', '🐼', '🦁', '🚀', '👑', '⚡', '🎨', '🤖', '👾', '🦄'];
@@ -79,6 +94,9 @@ function StudentJoinContent() {
         if (res.ok) {
           const data = await res.json();
           if (data.room) {
+            if (data.room.status === 'in_progress' && roomStatus === 'lobby') {
+              setJoinStartTime(Date.now());
+            }
             setRoomStatus(data.room.status || 'lobby');
             if (Array.isArray(data.room.students)) {
               setConnectedClassmates(data.room.students);
@@ -91,7 +109,7 @@ function StudentJoinContent() {
     }, 1500);
 
     return () => clearInterval(interval);
-  }, [joined, roomCode]);
+  }, [joined, roomCode, roomStatus]);
 
   return (
     <CityBackground>
@@ -277,37 +295,40 @@ function StudentJoinContent() {
                 </div>
               </div>
             ) : !submitted ? (
-              /* Live Answer Buttons when in_progress */
+              /* 3-Button Remote Control Answer Pad when in_progress */
               <div>
-                <h2 style={{ color: '#fff', fontSize: '1.35rem', fontWeight: 800, marginBottom: '0.5rem' }}>
-                  Tap the LIE as fast as you can!
+                <h2 style={{ color: '#fff', fontSize: '1.4rem', fontWeight: 900, marginBottom: '0.35rem' }}>
+                  ⚡ Tap the LIE!
                 </h2>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-                  Watch the Smartboard for the statements and pick 1, 2, or 3.
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: 1.4 }}>
+                  Look up at the Smartboard statements and tap 1, 2, or 3:
                 </p>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.85rem' }}>
                   {[1, 2, 3].map((num, idx) => (
                     <button
                       key={num}
                       onClick={() => handleSelectGuess(idx)}
                       style={{
-                        padding: '1.25rem',
-                        borderRadius: '16px',
-                        border: '2px solid rgba(168, 85, 247, 0.4)',
-                        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%)',
+                        padding: '1.75rem 0.5rem',
+                        borderRadius: '20px',
+                        border: '2px solid rgba(168, 85, 247, 0.5)',
+                        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.35) 0%, rgba(168, 85, 247, 0.35) 100%)',
                         color: '#fff',
-                        fontSize: '1.5rem',
+                        fontSize: '2.25rem',
                         fontWeight: 900,
                         cursor: 'pointer',
                         display: 'flex',
+                        flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '1rem',
-                        boxShadow: '0 4px 15px rgba(168, 85, 247, 0.2)'
+                        gap: '0.25rem',
+                        boxShadow: '0 6px 20px rgba(168, 85, 247, 0.3)',
+                        transition: 'transform 0.1s ease, background 0.15s ease'
                       }}
                     >
-                      <Zap size={24} color="#f59e0b" /> Statement #{num} is the LIE
+                      <span>{num}</span>
+                      <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.85, fontWeight: 700 }}>Statement #{num}</span>
                     </button>
                   ))}
                 </div>

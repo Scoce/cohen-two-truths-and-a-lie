@@ -49,7 +49,7 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
   // Live 15s Speed Contest State
   const [contestTimer, setContestTimer] = useState<number>(15);
   const [contestActive, setContestActive] = useState<boolean>(false);
-  const [roomCode] = useState<string>(() => String(Math.floor(1000 + Math.random() * 9000)));
+  const [roomCode, setRoomCode] = useState<string>('9925');
   const [studentLeaderboard, setStudentLeaderboard] = useState<StudentSubmission[]>([]);
   const [mockSimulating, setMockSimulating] = useState<boolean>(false);
 
@@ -81,11 +81,14 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
     }
     fetchGame();
 
-    // Read selected mode from setup configuration
+    // Read selected mode & roomCode from setup configuration
     try {
       const saved = localStorage.getItem('classroom_config');
       if (saved) {
         const parsed = JSON.parse(saved);
+        if (parsed.roomCode) {
+          setRoomCode(parsed.roomCode);
+        }
         if (parsed.mode) {
           setClassroomMode(parsed.mode);
           if (parsed.mode === 'contest') {
@@ -98,6 +101,27 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
       console.error(e);
     }
   }, [gameId]);
+
+  // Poll for real live student submissions during active contest
+  useEffect(() => {
+    if (!roomCode || !contestActive) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/classroom/rooms/${roomCode}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.room && Array.isArray(data.room.submissions) && data.room.submissions.length > 0) {
+            setStudentLeaderboard(data.room.submissions);
+          }
+        }
+      } catch (err) {
+        console.error('Error polling student submissions:', err);
+      }
+    }, 1200);
+
+    return () => clearInterval(interval);
+  }, [roomCode, contestActive]);
 
   // Mode A: Teacher Manual Timer
   useEffect(() => {
