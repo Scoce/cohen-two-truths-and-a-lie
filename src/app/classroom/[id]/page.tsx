@@ -61,7 +61,17 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
           throw new Error('Failed to load game');
         }
         const data = await res.json();
-        setGame(data.game);
+        const rawGame = data.game || data;
+        setGame({
+          id: rawGame.gameId || rawGame.id,
+          persona: rawGame.persona,
+          category: rawGame.category,
+          fact_1: rawGame.facts ? rawGame.facts[0] : rawGame.fact_1,
+          fact_2: rawGame.facts ? rawGame.facts[1] : rawGame.fact_2,
+          fact_3: rawGame.facts ? rawGame.facts[2] : rawGame.fact_3,
+          lie_index: typeof rawGame.lieIndex === 'number' ? rawGame.lieIndex : (typeof rawGame.lie_index === 'number' ? rawGame.lie_index : 0),
+          difficulty: rawGame.difficulty || 'Medium'
+        });
       } catch (err) {
         console.error(err);
         setError('Error loading classroom game.');

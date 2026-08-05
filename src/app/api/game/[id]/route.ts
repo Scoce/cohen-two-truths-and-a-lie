@@ -93,12 +93,13 @@ export async function GET(
       });
     }
 
-    // 4. If not played yet, hide the lie_index
+    // 4. Return game details including lieIndex for teacher reveal
     return NextResponse.json({
       gameId: game.id,
       persona: game.persona,
       category: game.category,
       facts: [game.fact_1, game.fact_2, game.fact_3],
+      lieIndex: game.lie_index,
       played: false,
       sessionProgress,
       sessionScore,
