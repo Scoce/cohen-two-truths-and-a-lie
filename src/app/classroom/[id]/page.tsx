@@ -4,6 +4,7 @@ import React, { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Play, Eye, EyeOff, RotateCcw, HelpCircle, CheckCircle2, XCircle, QrCode, Users, Zap, Award } from 'lucide-react';
 import CityBackground from '@/components/CityBackground';
+import QRCodeImage from '@/components/QRCodeImage';
 
 interface GameData {
   id: number;
@@ -329,13 +330,16 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
               background: 'rgba(0, 0, 0, 0.5)',
               border: '1px solid rgba(255, 255, 255, 0.2)',
               borderRadius: '12px',
-              padding: '0.75rem 1.25rem',
+              padding: '0.6rem 1rem',
               display: 'flex',
               alignItems: 'center',
               gap: '1rem'
             }}>
-              <div style={{ background: '#fff', padding: '0.4rem', borderRadius: '8px' }}>
-                <QrCode size={42} color="#000" />
+              <div style={{ background: '#fff', padding: '0.25rem', borderRadius: '8px' }}>
+                <QRCodeImage
+                  value={typeof window !== 'undefined' ? `${window.location.origin}/join?code=${roomCode}` : `https://truths-and-lies.app/join?code=${roomCode}`}
+                  size={64}
+                />
               </div>
               <div style={{ textAlign: 'left' }}>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Scan to Join Live</div>

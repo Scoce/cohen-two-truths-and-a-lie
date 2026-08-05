@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, QrCode, Play, Users, Zap, Settings, Trophy, ShieldCheck } from 'lucide-react';
 import CityBackground from '@/components/CityBackground';
+import QRCodeImage from '@/components/QRCodeImage';
 
 export default function ClassroomSetupPage() {
   const router = useRouter();
@@ -282,12 +283,15 @@ export default function ClassroomSetupPage() {
                 maxWidth: '450px',
                 margin: '0 auto 2.5rem auto'
               }}>
-                <div style={{ background: '#fff', padding: '1rem', borderRadius: '16px', boxShadow: '0 0 20px rgba(255,255,255,0.2)' }}>
-                  <QrCode size={160} color="#000" />
+                <div style={{ background: '#fff', padding: '0.75rem', borderRadius: '16px', boxShadow: '0 0 20px rgba(255,255,255,0.2)' }}>
+                  <QRCodeImage
+                    value={typeof window !== 'undefined' ? `${window.location.origin}/join?code=${roomCode}` : `https://truths-and-lies.app/join?code=${roomCode}`}
+                    size={180}
+                  />
                 </div>
                 <div>
                   <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                    Join Code for Smartboard
+                    Scan QR or Visit <strong>{typeof window !== 'undefined' ? window.location.host : 'TruthsAndLies.app'}/join</strong>
                   </div>
                   <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#f59e0b', letterSpacing: '3px' }}>
                     ROOM #{roomCode}
