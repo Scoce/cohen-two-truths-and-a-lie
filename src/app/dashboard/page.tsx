@@ -56,12 +56,54 @@ export default function Dashboard() {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [showAchievementsModal, setShowAchievementsModal] = useState(false);
 
-  // Save Account modal for guests
+  // Auth modal for guests (Login or Register)
   const [showSaveAccountModal, setShowSaveAccountModal] = useState(false);
+  const [authTab, setAuthTab] = useState<'login' | 'register'>('register');
   const [saveUsername, setSaveUsername] = useState('');
   const [savePassword, setSavePassword] = useState('');
   const [saveError, setSaveError] = useState('');
   const [saveLoading, setSaveLoading] = useState(false);
+
+  const handleLoginAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaveError('');
+    setSaveLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: saveUsername.trim(),
+          password: savePassword,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setSaveError(data.error || 'Failed to log in');
+      } else {
+        if (data.user) {
+          setUser({ ...data.user, isGuest: false });
+        } else {
+          // Re-fetch me
+          const meRes = await fetch('/api/auth/me');
+          if (meRes.ok) {
+            const meData = await meRes.json();
+            setUser({ ...meData.user, isGuest: false });
+          }
+        }
+        setShowSaveAccountModal(false);
+        setSaveUsername('');
+        setSavePassword('');
+      }
+    } catch (err) {
+      console.error(err);
+      setSaveError('Connection error. Please try again.');
+    } finally {
+      setSaveLoading(false);
+    }
+  };
 
   const handleSaveAccount = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,17 +125,23 @@ export default function Dashboard() {
       if (!res.ok) {
         setSaveError(data.error || 'Failed to save account');
       } else {
+        // Automatically log in after signup
+        await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: saveUsername.trim(), password: savePassword }),
+        });
+
         if (user) {
           setUser({ ...user, username: saveUsername.trim(), isGuest: false });
         }
         setShowSaveAccountModal(false);
         setSaveUsername('');
         setSavePassword('');
-        alert('Account saved! Your high scores and achievements are now preserved.');
       }
     } catch (err) {
       console.error(err);
-      setSaveError('Network error. Please try again.');
+      setSaveError('Connection error. Please try again.');
     } finally {
       setSaveLoading(false);
     }
@@ -341,6 +389,7 @@ export default function Dashboard() {
               <button 
                 onClick={() => {
                   if (user?.isGuest) {
+                    setAuthTab('register');
                     setShowSaveAccountModal(true);
                   } else {
                     router.push('/classroom/setup');
@@ -359,23 +408,50 @@ export default function Dashboard() {
               >
                 <Trophy size={16} /> Hall of Fame
               </button>
-              <button 
-                onClick={() => setShowAchievementsModal(true)} 
-                className={styles.achievementsLink}
-                title="View My Badges"
-              >
-                🏅 Badges
-              </button>
-              <span className={styles.username}>{user.username}</span>
-              <span className={styles.scoreBadge}>{user.score} pts</span>
-              <button 
-                onClick={handleLogout} 
-                className={styles.logoutBtn}
-                title="Sign Out"
-                aria-label="Sign Out"
-              >
-                <LogOut size={16} />
-              </button>
+
+              {user.isGuest ? (
+                <>
+                  <button
+                    onClick={() => {
+                      setAuthTab('login');
+                      setShowSaveAccountModal(true);
+                    }}
+                    style={{
+                      padding: '0.45rem 0.85rem',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      color: '#fff',
+                      fontWeight: 'bold',
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    🔑 Log In / Register
+                  </button>
+                  <span className={styles.username} style={{ opacity: 0.8 }}>🎮 Guest</span>
+                </>
+              ) : (
+                <>
+                  <button 
+                    onClick={() => setShowAchievementsModal(true)} 
+                    className={styles.achievementsLink}
+                    title="View My Badges"
+                  >
+                    🏅 Badges
+                  </button>
+                  <span className={styles.username}>{user.username}</span>
+                  <span className={styles.scoreBadge}>{user.score} pts</span>
+                  <button 
+                    onClick={handleLogout} 
+                    className={styles.logoutBtn}
+                    title="Sign Out"
+                    aria-label="Sign Out"
+                  >
+                    <LogOut size={16} />
+                  </button>
+                </>
+              )}
             </div>
           )}
         </header>
@@ -398,25 +474,48 @@ export default function Dashboard() {
             <div>
               <strong style={{ color: '#fff' }}>Playing as Guest:</strong>
               <span style={{ color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>
-                Create a free account to unlock <strong>Smartboard Classroom Mode</strong> (Teacher-Led & Live Student Speed Contests with QR Code)!
+                Log in or create a free account to preserve your leaderboard score & unlock Smartboard Classroom Tools!
               </span>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowSaveAccountModal(true)}
-              style={{
-                padding: '0.5rem 1rem',
-                borderRadius: '6px',
-                border: 'none',
-                background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-                color: '#fff',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                boxShadow: '0 2px 10px rgba(168, 85, 247, 0.3)',
-              }}
-            >
-              🍎 Unlock Classroom Tools
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthTab('login');
+                  setShowSaveAccountModal(true);
+                }}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '6px',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  color: '#fff',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                }}
+              >
+                🔑 Log In
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthTab('register');
+                  setShowSaveAccountModal(true);
+                }}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                  color: '#fff',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 10px rgba(168, 85, 247, 0.3)',
+                }}
+              >
+                ✨ Create Account
+              </button>
+            </div>
           </div>
         )}
 
@@ -594,12 +693,45 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Save Account Modal */}
+      {/* Dual-Tab Auth Modal */}
       {showSaveAccountModal && (
         <div className={styles.modalOverlay} onClick={() => setShowSaveAccountModal(false)}>
-          <div className={`${styles.modalContent} glass-panel`} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px' }}>
+          <div className={`${styles.modalContent} glass-panel`} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '440px' }}>
             <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>Save Free Account</h3>
+              <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(0,0,0,0.3)', padding: '4px', borderRadius: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => { setAuthTab('login'); setSaveError(''); }}
+                  style={{
+                    padding: '0.4rem 1rem',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: authTab === 'login' ? 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' : 'transparent',
+                    color: '#fff',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem'
+                  }}
+                >
+                  🔑 Log In
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setAuthTab('register'); setSaveError(''); }}
+                  style={{
+                    padding: '0.4rem 1rem',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: authTab === 'register' ? 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' : 'transparent',
+                    color: '#fff',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem'
+                  }}
+                >
+                  ✨ Create Free Account
+                </button>
+              </div>
               <button 
                 className={styles.closeBtn}
                 onClick={() => setShowSaveAccountModal(false)}
@@ -608,19 +740,21 @@ export default function Dashboard() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveAccount} className={styles.modalBody} style={{ gap: '1rem', display: 'flex', flexDirection: 'column' }}>
+            <form onSubmit={authTab === 'login' ? handleLoginAccount : handleSaveAccount} className={styles.modalBody} style={{ gap: '1rem', display: 'flex', flexDirection: 'column' }}>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                Create your username and password below. All your current scores and earned badges will be saved permanently!
+                {authTab === 'login'
+                  ? 'Welcome back! Log into your account to access your high scores and Smartboard Tools.'
+                  : 'Create a free account to save your scores on the leaderboard and unlock Smartboard Classroom Tools!'}
               </p>
 
-              {saveError && <div style={{ color: '#ef4444', fontSize: '0.85rem' }}>{saveError}</div>}
+              {saveError && <div style={{ color: '#ef4444', fontSize: '0.85rem' }}>⚠️ {saveError}</div>}
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.25rem', color: '#fff' }}>Username</label>
                 <input
                   type="text"
                   required
-                  placeholder="Choose a username"
+                  placeholder="Enter your username"
                   value={saveUsername}
                   onChange={(e) => setSaveUsername(e.target.value)}
                   disabled={saveLoading}
@@ -640,7 +774,7 @@ export default function Dashboard() {
                 <input
                   type="password"
                   required
-                  placeholder="Create a password (min 6 chars)"
+                  placeholder="Enter your password"
                   value={savePassword}
                   onChange={(e) => setSavePassword(e.target.value)}
                   disabled={saveLoading}
@@ -669,7 +803,11 @@ export default function Dashboard() {
                   marginTop: '0.5rem',
                 }}
               >
-                {saveLoading ? 'Saving...' : 'Save Account & Keep Progress'}
+                {saveLoading
+                  ? 'Processing...'
+                  : authTab === 'login'
+                  ? '🔑 Log In Now'
+                  : '✨ Save & Create Account'}
               </button>
             </form>
           </div>
