@@ -360,32 +360,6 @@ export default function Dashboard() {
           <div className={styles.title}>Truths and Lies</div>
           {user && (
             <div className={styles.userInfo}>
-              <div className={styles.ageSelectorGroup}>
-                <span className={styles.ageLabel}>Playing:</span>
-                <select
-                  value={activeBucket}
-                  onChange={(e) => handleAgeChange(parseInt(e.target.value, 10))}
-                  className={styles.ageSelect}
-                  aria-label="Change age group"
-                >
-                  <option value="8">Children (Under 12)</option>
-                  <option value="14">Teens (12-17)</option>
-                  <option value="25">Adults (18+)</option>
-                </select>
-              </div>
-              <div className={styles.ageSelectorGroup}>
-                <span className={styles.ageLabel}>Difficulty:</span>
-                <select
-                  value={difficulty}
-                  onChange={(e) => handleDifficultyChange(e.target.value)}
-                  className={styles.ageSelect}
-                  aria-label="Change difficulty"
-                >
-                  <option value="Easy">Easy</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Hard">Hard</option>
-                </select>
-              </div>
               <button 
                 onClick={() => {
                   if (user?.isGuest) {
@@ -519,12 +493,45 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Welcome Section */}
-        <div className={styles.welcomeSection}>
-          <h2 className={styles.welcomeTitle}>Choose a Fun Category!</h2>
-          <p className={styles.welcomeDesc}>
-            Pick a topic below. The Gemini AI will make two truths and a lie about a famous person or cartoon character. Can you find the lie?
-          </p>
+        {/* Welcome Section & Solo Game Settings Toolbar */}
+        <div className={styles.welcomeSection} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1.25rem' }}>
+          <div>
+            <h2 className={styles.welcomeTitle}>Choose a Fun Category!</h2>
+            <p className={styles.welcomeDesc}>
+              Pick a topic below. The Gemini AI will make two truths and a lie about a famous person or cartoon character. Can you find the lie?
+            </p>
+          </div>
+
+          {/* Solo Game Controls Toolbar */}
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'rgba(15, 23, 42, 0.65)', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '12px', padding: '0.6rem 1.25rem', backdropFilter: 'blur(8px)' }}>
+            <div className={styles.ageSelectorGroup}>
+              <span className={styles.ageLabel}>Playing:</span>
+              <select
+                value={activeBucket}
+                onChange={(e) => handleAgeChange(parseInt(e.target.value, 10))}
+                className={styles.ageSelect}
+                aria-label="Change age group"
+              >
+                <option value="8">Children (Under 12)</option>
+                <option value="14">Teens (12-17)</option>
+                <option value="25">Adults (18+)</option>
+              </select>
+            </div>
+
+            <div className={styles.ageSelectorGroup}>
+              <span className={styles.ageLabel}>Difficulty:</span>
+              <select
+                value={difficulty}
+                onChange={(e) => handleDifficultyChange(e.target.value)}
+                className={styles.ageSelect}
+                aria-label="Change difficulty"
+              >
+                <option value="Easy">Easy</option>
+                <option value="Medium">Medium</option>
+                <option value="Hard">Hard</option>
+              </select>
+            </div>
+          </div>
         </div>
 
         {/* Categories Grid (Takes up full width) */}
