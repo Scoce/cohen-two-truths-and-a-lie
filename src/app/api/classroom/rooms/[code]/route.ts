@@ -26,9 +26,9 @@ export async function POST(
 ) {
   try {
     const { code } = await params;
-    const { status, currentGameId } = await req.json();
+    const { status, currentGameId, persona } = await req.json();
 
-    updateRoomStatus(code, status, currentGameId);
+    updateRoomStatus(code, status, currentGameId, persona);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('[update-room-api] Error:', error);

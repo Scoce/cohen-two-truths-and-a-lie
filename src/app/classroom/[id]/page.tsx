@@ -102,6 +102,17 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
     }
   }, [gameId]);
 
+  // Sync game persona with live room store
+  useEffect(() => {
+    if (game && roomCode) {
+      fetch(`/api/classroom/rooms/${roomCode}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'in_progress', currentGameId: game.id, persona: game.persona }),
+      }).catch(console.error);
+    }
+  }, [game, roomCode]);
+
   // Poll for real live student submissions during active contest
   useEffect(() => {
     if (!roomCode || !contestActive) return;

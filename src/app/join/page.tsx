@@ -82,6 +82,7 @@ function StudentJoinContent() {
   const AVATARS = ['🐶', '🐱', '🦊', '🐼', '🦁', '🚀', '👑', '⚡', '🎨', '🤖', '👾', '🦄'];
   const [selectedAvatar, setSelectedAvatar] = useState('🐶');
   const [roomStatus, setRoomStatus] = useState<'lobby' | 'in_progress'>('lobby');
+  const [currentPersona, setCurrentPersona] = useState<string>('');
   const [connectedClassmates, setConnectedClassmates] = useState<Array<{ nickname: string; avatar: string }>>([]);
 
   // Poll room status when student has joined to know when teacher starts the game
@@ -98,6 +99,9 @@ function StudentJoinContent() {
               setJoinStartTime(Date.now());
             }
             setRoomStatus(data.room.status || 'lobby');
+            if (data.room.persona) {
+              setCurrentPersona(data.room.persona);
+            }
             if (Array.isArray(data.room.students)) {
               setConnectedClassmates(data.room.students);
             }
@@ -297,11 +301,11 @@ function StudentJoinContent() {
             ) : !submitted ? (
               /* 3-Button Remote Control Answer Pad when in_progress */
               <div>
-                <h2 style={{ color: '#fff', fontSize: '1.4rem', fontWeight: 900, marginBottom: '0.35rem' }}>
-                  ⚡ Tap the LIE!
+                <h2 style={{ color: '#fff', fontSize: '1.4rem', fontWeight: 900, marginBottom: '0.25rem' }}>
+                  ⚡ {currentPersona ? currentPersona.toUpperCase() : 'TAP THE LIE!'}
                 </h2>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: 1.4 }}>
-                  Look up at the Smartboard statements and tap 1, 2, or 3:
+                  Look at the 3 statements on the Smartboard and tap 1, 2, or 3 below:
                 </p>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.85rem' }}>

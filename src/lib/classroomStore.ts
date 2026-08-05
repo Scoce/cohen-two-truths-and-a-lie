@@ -23,6 +23,7 @@ export interface ClassroomRoom {
   totalRounds: number;
   currentRound: number;
   currentGameId?: number;
+  persona?: string;
   createdAt: number;
   students: ConnectedStudent[];
   submissions: StudentSubmission[];
@@ -101,12 +102,20 @@ export function joinRoom(roomCode: string, student: { nickname: string; avatar: 
   return { success: true, studentId: newStudent.id };
 }
 
-export function updateRoomStatus(roomCode: string, status: 'lobby' | 'in_progress' | 'completed', currentGameId?: number) {
+export function updateRoomStatus(
+  roomCode: string,
+  status: 'lobby' | 'in_progress' | 'completed',
+  currentGameId?: number,
+  persona?: string
+) {
   const room = globalRooms.get(roomCode);
   if (room) {
     room.status = status;
     if (currentGameId) {
       room.currentGameId = currentGameId;
+    }
+    if (persona) {
+      room.persona = persona;
     }
     if (status === 'in_progress') {
       room.submissions = []; // Clear submissions for new round
