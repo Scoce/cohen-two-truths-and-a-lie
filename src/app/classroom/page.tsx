@@ -105,31 +105,31 @@ export default function ClassroomHubPage() {
         }}>
           <div style={{
             background: 'rgba(15, 23, 42, 0.65)',
-            border: '1px solid rgba(99, 102, 241, 0.3)',
-            borderRadius: '16px',
-            padding: '1.5rem',
-            backdropFilter: 'blur(12px)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#6366f1', fontSize: '1.2rem', fontWeight: 800, marginBottom: '0.75rem' }}>
-              <Users size={24} /> Mode A: Teacher-Led Smartboard
-            </div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: 1.5, margin: 0 }}>
-              Full-screen projector view designed to be read across the room. Whole class discusses statements together while teacher reveals the lie.
-            </p>
-          </div>
-
-          <div style={{
-            background: 'rgba(15, 23, 42, 0.65)',
             border: '1px solid rgba(225, 29, 72, 0.3)',
             borderRadius: '16px',
             padding: '1.5rem',
             backdropFilter: 'blur(12px)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#e11d48', fontSize: '1.2rem', fontWeight: 800, marginBottom: '0.75rem' }}>
-              <Zap size={24} /> Mode B: Live 10s Speed Contest
+              <Zap size={24} /> Mode A: Live 15s Speed Contest ⭐
             </div>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: 1.5, margin: 0 }}>
-              Students scan a QR code to answer on their own devices. Includes automatic 10-second timer and live speed leaderboard.
+              Students scan a QR code to answer on their own devices. Includes automatic 15-second timer and live speed leaderboard.
+            </p>
+          </div>
+
+          <div style={{
+            background: 'rgba(15, 23, 42, 0.65)',
+            border: '1px solid rgba(99, 102, 241, 0.3)',
+            borderRadius: '16px',
+            padding: '1.5rem',
+            backdropFilter: 'blur(12px)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#6366f1', fontSize: '1.2rem', fontWeight: 800, marginBottom: '0.75rem' }}>
+              <Users size={24} /> Mode B: Teacher-Led Smartboard
+            </div>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: 1.5, margin: 0 }}>
+              Full-screen projector view designed to be read across the room. Whole class discusses statements together while teacher reveals the lie.
             </p>
           </div>
 

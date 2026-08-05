@@ -14,7 +14,7 @@ export default function ClassroomSetupPage() {
   const [ageGroup, setAgeGroup] = useState<number>(10);
   const [difficulty, setDifficulty] = useState<string>('Medium');
   const [totalRounds, setTotalRounds] = useState<number>(5);
-  const [mode, setMode] = useState<'teacher' | 'contest'>('teacher');
+  const [mode, setMode] = useState<'contest' | 'teacher'>('contest');
   const [roomCode] = useState<string>(() => String(Math.floor(1000 + Math.random() * 9000)));
 
   const [step, setStep] = useState<'config' | 'lobby'>('config');
@@ -176,25 +176,6 @@ export default function ClassroomSetupPage() {
                   </label>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem' }}>
                     <div
-                      onClick={() => setMode('teacher')}
-                      style={{
-                        padding: '1.25rem',
-                        borderRadius: '14px',
-                        border: `2px solid ${mode === 'teacher' ? '#6366f1' : 'rgba(255,255,255,0.1)'}`,
-                        background: mode === 'teacher' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255,255,255,0.03)',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 800, color: '#fff', fontSize: '1.1rem', marginBottom: '0.35rem' }}>
-                        <Users size={20} color="#6366f1" /> Mode A: Teacher-Led
-                      </div>
-                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
-                        Project statements on the Smartboard. Whole class discusses together while teacher reveals the lie.
-                      </p>
-                    </div>
-
-                    <div
                       onClick={() => setMode('contest')}
                       style={{
                         padding: '1.25rem',
@@ -206,10 +187,29 @@ export default function ClassroomSetupPage() {
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 800, color: '#fff', fontSize: '1.1rem', marginBottom: '0.35rem' }}>
-                        <Zap size={20} color="#e11d48" /> Mode B: Live QR 15s Speed Contest
+                        <Zap size={20} color="#e11d48" /> Mode A: Live QR 15s Speed Contest ⭐ (Popular)
                       </div>
                       <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
                         Students scan QR Code to answer on their own devices. Automatic 15s timer with speed leaderboard.
+                      </p>
+                    </div>
+
+                    <div
+                      onClick={() => setMode('teacher')}
+                      style={{
+                        padding: '1.25rem',
+                        borderRadius: '14px',
+                        border: `2px solid ${mode === 'teacher' ? '#6366f1' : 'rgba(255,255,255,0.1)'}`,
+                        background: mode === 'teacher' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255,255,255,0.03)',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 800, color: '#fff', fontSize: '1.1rem', marginBottom: '0.35rem' }}>
+                        <Users size={20} color="#6366f1" /> Mode B: Teacher-Led
+                      </div>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
+                        Project statements on the Smartboard. Whole class discusses together while teacher reveals the lie.
                       </p>
                     </div>
                   </div>

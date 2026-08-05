@@ -80,6 +80,23 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
       }
     }
     fetchGame();
+
+    // Read selected mode from setup configuration
+    try {
+      const saved = localStorage.getItem('classroom_config');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.mode) {
+          setClassroomMode(parsed.mode);
+          if (parsed.mode === 'contest') {
+            setContestActive(true);
+            setContestTimer(15);
+          }
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
   }, [gameId]);
 
   // Mode A: Teacher Manual Timer
@@ -251,24 +268,6 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
           {/* Mode Switcher Tabs */}
           <div style={{ display: 'flex', background: 'rgba(0, 0, 0, 0.4)', borderRadius: '10px', padding: '4px' }}>
             <button
-              onClick={() => { setClassroomMode('teacher'); setRevealed(false); }}
-              style={{
-                padding: '0.5rem 1.25rem',
-                borderRadius: '8px',
-                border: 'none',
-                background: classroomMode === 'teacher' ? 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' : 'transparent',
-                color: '#fff',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem'
-              }}
-            >
-              <Users size={16} /> Mode A: Teacher-Led
-            </button>
-            <button
               onClick={() => { setClassroomMode('contest'); setRevealed(false); }}
               style={{
                 padding: '0.5rem 1.25rem',
@@ -284,7 +283,25 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
                 gap: '0.5rem'
               }}
             >
-              <Zap size={16} /> Mode B: Live QR 15s Speed Contest
+              <Zap size={16} /> Mode A: Live QR 15s Speed Contest ⭐
+            </button>
+            <button
+              onClick={() => { setClassroomMode('teacher'); setRevealed(false); }}
+              style={{
+                padding: '0.5rem 1.25rem',
+                borderRadius: '8px',
+                border: 'none',
+                background: classroomMode === 'teacher' ? 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' : 'transparent',
+                color: '#fff',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              <Users size={16} /> Mode B: Teacher-Led
             </button>
           </div>
 
@@ -311,7 +328,7 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
                 disabled={contestActive}
                 style={{ padding: '0.55rem 1.2rem', borderRadius: '8px', background: contestActive ? 'rgba(255,255,255,0.2)' : '#e11d48', color: '#fff', border: 'none', fontWeight: 'bold', cursor: contestActive ? 'not-allowed' : 'pointer', fontSize: '0.9rem' }}
               >
-                {contestActive ? 'Contest Running...' : '🚀 START 10s CONTEST'}
+                {contestActive ? 'Contest Running...' : '🚀 START 15s CONTEST'}
               </button>
             </div>
           )}
