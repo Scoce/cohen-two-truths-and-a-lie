@@ -41,6 +41,13 @@ function StudentJoinContent() {
       if (!data.allowed) {
         setModError(data.reason || 'Please choose a clean, friendly classroom nickname!');
       } else {
+        // Register student in live room store
+        await fetch(`/api/classroom/rooms/${roomCode}/join`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nickname: nickname.trim(), avatar: selectedAvatar }),
+        }).catch(console.error);
+
         setJoined(true);
       }
     } catch (err) {

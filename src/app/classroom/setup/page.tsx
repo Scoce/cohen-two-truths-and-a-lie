@@ -19,6 +19,42 @@ export default function ClassroomSetupPage() {
 
   const [step, setStep] = useState<'config' | 'lobby'>('config');
   const [starting, setStarting] = useState(false);
+  const [connectedStudents, setConnectedStudents] = useState<Array<{ id: string; nickname: string; avatar: string }>>([]);
+
+  // Initialize room & poll for real connected students when in lobby step
+  React.useEffect(() => {
+    if (step !== 'lobby') return;
+
+    // Create room on server
+    fetch('/api/classroom/rooms/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        roomCode,
+        category,
+        difficulty,
+        ageGroup,
+        totalRounds,
+      }),
+    }).catch(console.error);
+
+    // Poll room status every 1.5s for real-time student joins
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/classroom/rooms/${roomCode}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.room && Array.isArray(data.room.students)) {
+            setConnectedStudents(data.room.students);
+          }
+        }
+      } catch (err) {
+        console.error('Error polling connected students:', err);
+      }
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [step, roomCode, category, difficulty, ageGroup, totalRounds]);
 
   const handleStartSession = async () => {
     setStarting(true);
@@ -39,6 +75,13 @@ export default function ClassroomSetupPage() {
       }
 
       const data = await res.json();
+
+      // Update room status to in_progress
+      fetch(`/api/classroom/rooms/${roomCode}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'in_progress', currentGameId: data.gameId }),
+      }).catch(console.error);
 
       // Save classroom configuration to localStorage
       localStorage.setItem('classroom_config', JSON.stringify({
@@ -319,35 +362,47 @@ export default function ClassroomSetupPage() {
                       <Users size={20} /> Connected Students
                     </span>
                     <span style={{ background: '#a855f7', color: '#fff', padding: '0.2rem 0.75rem', borderRadius: '20px', fontWeight: 800, fontSize: '0.85rem' }}>
-                      5 Joined
+                      {connectedStudents.length} Joined
                     </span>
                   </div>
 
                   {/* Student Avatars Grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '0.75rem', flex: 1 }}>
-                    {[
-                      { name: 'Alex M.', avatar: '🐶' },
-                      { name: 'Jordan K.', avatar: '🦊' },
-                      { name: 'Taylor S.', avatar: '🚀' },
-                      { name: 'Sam P.', avatar: '👑' },
-                      { name: 'Riley B.', avatar: '🤖' }
-                    ].map((student, idx) => (
-                      <div key={idx} style={{
-                        background: 'rgba(255, 255, 255, 0.08)',
-                        border: '1px solid rgba(255, 255, 255, 0.15)',
-                        borderRadius: '12px',
-                        padding: '0.75rem 0.5rem',
-                        textAlign: 'center',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '0.35rem'
-                      }}>
-                        <span style={{ fontSize: '1.8rem' }}>{student.avatar}</span>
-                        <span style={{ color: '#fff', fontWeight: 700, fontSize: '0.85rem' }}>{student.name}</span>
-                      </div>
-                    ))}
-                  </div>
+                  {connectedStudents.length > 0 ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '0.75rem', flex: 1 }}>
+                      {connectedStudents.map((student) => (
+                        <div key={student.id} style={{
+                          background: 'rgba(255, 255, 255, 0.08)',
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          borderRadius: '12px',
+                          padding: '0.75rem 0.5rem',
+                          textAlign: 'center',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          animation: 'fadeIn 0.3s ease'
+                        }}>
+                          <span style={{ fontSize: '1.8rem' }}>{student.avatar || '🐶'}</span>
+                          <span style={{ color: '#fff', fontWeight: 700, fontSize: '0.85rem' }}>{student.nickname}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flex: 1,
+                      color: 'var(--text-secondary)',
+                      fontSize: '0.95rem',
+                      padding: '2rem 1rem',
+                      textAlign: 'center'
+                    }}>
+                      <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📱</div>
+                      Waiting for students to scan QR code & join...
+                    </div>
+                  )}
                 </div>
               </div>
 
