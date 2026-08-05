@@ -28,8 +28,8 @@ export async function GET(
 
     // 2. Query game from database
     const gameRes = await query(
-      'SELECT * FROM games WHERE id = $1 AND user_id = $2',
-      [gameId, sessionUser.userId]
+      'SELECT * FROM games WHERE id = $1',
+      [gameId]
     );
 
     if (gameRes.rowCount === 0) {

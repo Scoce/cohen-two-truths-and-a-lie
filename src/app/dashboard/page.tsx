@@ -339,6 +339,20 @@ export default function Dashboard() {
                 </select>
               </div>
               <button 
+                onClick={() => {
+                  if (user?.isGuest) {
+                    setShowSaveAccountModal(true);
+                  } else {
+                    router.push('/classroom/setup');
+                  }
+                }}
+                className={styles.achievementsLink}
+                style={{ background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.4) 0%, rgba(168, 85, 247, 0.4) 100%)', borderColor: 'rgba(168, 85, 247, 0.5)' }}
+                title="Launch Smartboard Presentation & Live QR Contest"
+              >
+                🍎 Smartboard Launcher
+              </button>
+              <button 
                 onClick={() => setShowLeaderboardModal(true)} 
                 className={styles.leaderboardLink}
                 title="View Monthly Leaderboard"
