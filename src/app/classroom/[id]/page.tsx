@@ -46,8 +46,8 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
   const [timerSeconds, setTimerSeconds] = useState<number>(30);
   const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
 
-  // Live 10s Speed Contest State
-  const [contestTimer, setContestTimer] = useState<number>(10);
+  // Live 15s Speed Contest State
+  const [contestTimer, setContestTimer] = useState<number>(15);
   const [contestActive, setContestActive] = useState<boolean>(false);
   const [roomCode] = useState<string>(() => String(Math.floor(1000 + Math.random() * 9000)));
   const [studentLeaderboard, setStudentLeaderboard] = useState<StudentSubmission[]>([]);
@@ -110,7 +110,7 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
   }, [contestActive, contestTimer]);
 
   const handleStartContest = () => {
-    setContestTimer(10);
+    setContestTimer(15);
     setContestActive(true);
     setRevealed(false);
 
@@ -284,7 +284,7 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
                 gap: '0.5rem'
               }}
             >
-              <Zap size={16} /> Mode B: Live QR 10s Speed Contest
+              <Zap size={16} /> Mode B: Live QR 15s Speed Contest
             </button>
           </div>
 

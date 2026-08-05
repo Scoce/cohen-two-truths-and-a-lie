@@ -206,10 +206,10 @@ export default function ClassroomSetupPage() {
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 800, color: '#fff', fontSize: '1.1rem', marginBottom: '0.35rem' }}>
-                        <Zap size={20} color="#e11d48" /> Mode B: Live QR Speed Contest
+                        <Zap size={20} color="#e11d48" /> Mode B: Live QR 15s Speed Contest
                       </div>
                       <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
-                        Students scan QR Code to answer on their own devices. Automatic 10s timer with speed leaderboard.
+                        Students scan QR Code to answer on their own devices. Automatic 15s timer with speed leaderboard.
                       </p>
                     </div>
                   </div>
@@ -415,9 +415,18 @@ export default function ClassroomSetupPage() {
                   🔄 Length: <strong>{totalRounds} Rounds</strong>
                 </span>
                 <span style={{ padding: '0.5rem 1rem', background: 'rgba(255,255,255,0.08)', borderRadius: '20px', color: '#fff', fontSize: '0.9rem' }}>
-                  🎯 Mode: <strong>{mode === 'teacher' ? 'Teacher-Led' : '10s Speed Contest'}</strong>
+                  🎯 Mode: <strong>{mode === 'teacher' ? 'Teacher-Led' : '15s Speed Contest'}</strong>
                 </span>
               </div>
+
+              {/* Pulsing CSS Keyframes */}
+              <style jsx>{`
+                @keyframes pulseGlow {
+                  0% { transform: scale(1); box-shadow: 0 0 20px rgba(225, 29, 72, 0.5); }
+                  50% { transform: scale(1.05); box-shadow: 0 0 45px rgba(225, 29, 72, 0.9); }
+                  100% { transform: scale(1); box-shadow: 0 0 20px rgba(225, 29, 72, 0.5); }
+                }
+              `}</style>
 
               {/* Start Game Button */}
               <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem' }}>
@@ -447,7 +456,7 @@ export default function ClassroomSetupPage() {
                     fontWeight: 900,
                     fontSize: '1.3rem',
                     cursor: starting ? 'not-allowed' : 'pointer',
-                    boxShadow: '0 0 30px rgba(225, 29, 72, 0.5)',
+                    animation: starting ? 'none' : 'pulseGlow 1.8s infinite ease-in-out',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.75rem'

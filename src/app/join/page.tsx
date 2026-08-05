@@ -66,6 +66,32 @@ function StudentJoinContent() {
 
   const AVATARS = ['🐶', '🐱', '🦊', '🐼', '🦁', '🚀', '👑', '⚡', '🎨', '🤖', '👾', '🦄'];
   const [selectedAvatar, setSelectedAvatar] = useState('🐶');
+  const [roomStatus, setRoomStatus] = useState<'lobby' | 'in_progress'>('lobby');
+  const [connectedClassmates, setConnectedClassmates] = useState<Array<{ nickname: string; avatar: string }>>([]);
+
+  // Poll room status when student has joined to know when teacher starts the game
+  useEffect(() => {
+    if (!joined || !roomCode) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/classroom/rooms/${roomCode}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.room) {
+            setRoomStatus(data.room.status || 'lobby');
+            if (Array.isArray(data.room.students)) {
+              setConnectedClassmates(data.room.students);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error polling room status on student side:', err);
+      }
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [joined, roomCode]);
 
   return (
     <CityBackground>
@@ -225,7 +251,33 @@ function StudentJoinContent() {
               </div>
             </div>
 
-            {!submitted ? (
+            {roomStatus === 'lobby' ? (
+              /* Student Waiting Lobby Screen */
+              <div style={{ padding: '1.5rem 0' }}>
+                <div style={{ fontSize: '3.5rem', marginBottom: '1rem', animation: 'bounce 2s infinite' }}>⏳</div>
+                <h2 style={{ color: '#fff', fontSize: '1.5rem', fontWeight: 900, margin: '0 0 0.5rem 0' }}>
+                  Waiting for Teacher to Start...
+                </h2>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '1.5rem', lineHeight: 1.4 }}>
+                  Get ready! Tap the LIE as fast as you can when the round begins!
+                </p>
+
+                {/* Classmates Counter & Roster */}
+                <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '14px', padding: '1rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <div style={{ fontSize: '0.85rem', color: '#a855f7', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                    Connected Classmates ({connectedClassmates.length})
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center' }}>
+                    {connectedClassmates.map((c, i) => (
+                      <span key={i} style={{ background: 'rgba(255,255,255,0.1)', padding: '0.3rem 0.65rem', borderRadius: '12px', fontSize: '0.85rem', color: '#fff' }}>
+                        {c.avatar || '🐶'} {c.nickname}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : !submitted ? (
+              /* Live Answer Buttons when in_progress */
               <div>
                 <h2 style={{ color: '#fff', fontSize: '1.35rem', fontWeight: 800, marginBottom: '0.5rem' }}>
                   Tap the LIE as fast as you can!
