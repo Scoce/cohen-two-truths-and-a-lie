@@ -272,29 +272,81 @@ export default function ClassroomSetupPage() {
 
               {/* QR Code & Room Info Card */}
               <div style={{
-                background: 'rgba(0, 0, 0, 0.4)',
-                border: '2px dashed rgba(168, 85, 247, 0.5)',
-                borderRadius: '20px',
-                padding: '2rem',
-                display: 'flex',
-                flexDirection: 'column',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                gap: '2rem',
                 alignItems: 'center',
-                gap: '1.25rem',
-                maxWidth: '450px',
-                margin: '0 auto 2.5rem auto'
+                marginBottom: '2.5rem'
               }}>
-                <div style={{ background: '#fff', padding: '0.75rem', borderRadius: '16px', boxShadow: '0 0 20px rgba(255,255,255,0.2)' }}>
-                  <QRCodeImage
-                    value={typeof window !== 'undefined' ? `${window.location.origin}/join?code=${roomCode}` : `https://truths-and-lies.app/join?code=${roomCode}`}
-                    size={180}
-                  />
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                    Scan QR or Visit <strong>{typeof window !== 'undefined' ? window.location.host : 'TruthsAndLies.app'}/join</strong>
+                <div style={{
+                  background: 'rgba(0, 0, 0, 0.4)',
+                  border: '2px dashed rgba(168, 85, 247, 0.5)',
+                  borderRadius: '20px',
+                  padding: '2rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '1.25rem'
+                }}>
+                  <div style={{ background: '#fff', padding: '0.75rem', borderRadius: '16px', boxShadow: '0 0 20px rgba(255,255,255,0.2)' }}>
+                    <QRCodeImage
+                      value={typeof window !== 'undefined' ? `${window.location.origin}/join?code=${roomCode}` : `https://truths-and-lies.app/join?code=${roomCode}`}
+                      size={180}
+                    />
                   </div>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#f59e0b', letterSpacing: '3px' }}>
-                    ROOM #{roomCode}
+                  <div>
+                    <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                      Scan QR or Visit <strong>{typeof window !== 'undefined' ? window.location.host : 'TruthsAndLies.app'}/join</strong>
+                    </div>
+                    <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#f59e0b', letterSpacing: '3px' }}>
+                      ROOM #{roomCode}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live Connected Students Roster */}
+                <div style={{
+                  background: 'rgba(0, 0, 0, 0.3)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '20px',
+                  padding: '1.5rem',
+                  minHeight: '260px',
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.75rem' }}>
+                    <span style={{ fontWeight: 800, color: '#a855f7', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Users size={20} /> Connected Students
+                    </span>
+                    <span style={{ background: '#a855f7', color: '#fff', padding: '0.2rem 0.75rem', borderRadius: '20px', fontWeight: 800, fontSize: '0.85rem' }}>
+                      5 Joined
+                    </span>
+                  </div>
+
+                  {/* Student Avatars Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '0.75rem', flex: 1 }}>
+                    {[
+                      { name: 'Alex M.', avatar: '🐶' },
+                      { name: 'Jordan K.', avatar: '🦊' },
+                      { name: 'Taylor S.', avatar: '🚀' },
+                      { name: 'Sam P.', avatar: '👑' },
+                      { name: 'Riley B.', avatar: '🤖' }
+                    ].map((student, idx) => (
+                      <div key={idx} style={{
+                        background: 'rgba(255, 255, 255, 0.08)',
+                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                        borderRadius: '12px',
+                        padding: '0.75rem 0.5rem',
+                        textAlign: 'center',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '0.35rem'
+                      }}>
+                        <span style={{ fontSize: '1.8rem' }}>{student.avatar}</span>
+                        <span style={{ color: '#fff', fontWeight: 700, fontSize: '0.85rem' }}>{student.name}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>

@@ -19,6 +19,7 @@ interface GameData {
 
 interface StudentSubmission {
   studentName: string;
+  avatar: string;
   guessedIndex: number;
   secondsTaken: number;
   isCorrect: boolean;
@@ -106,15 +107,21 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
     // Simulate class responses for demonstration if no live students are connected
     if (studentLeaderboard.length === 0 && !mockSimulating) {
       setMockSimulating(true);
-      const mockStudents = ['Alex M.', 'Jordan K.', 'Taylor S.', 'Sam P.', 'Riley B.'];
+      const mockStudents = [
+        { name: 'Alex M.', avatar: '🐶' },
+        { name: 'Jordan K.', avatar: '🦊' },
+        { name: 'Taylor S.', avatar: '🚀' },
+        { name: 'Sam P.', avatar: '👑' },
+        { name: 'Riley B.', avatar: '🤖' }
+      ];
       setTimeout(() => {
         if (!game) return;
-        const submissions: StudentSubmission[] = mockStudents.map((name) => {
+        const submissions: StudentSubmission[] = mockStudents.map((st) => {
           const seconds = Math.floor(Math.random() * 8) + 1;
           const guessedIndex = Math.random() > 0.3 ? game.lie_index : (game.lie_index + 1) % 3;
           const isCorrect = guessedIndex === game.lie_index;
           const score = isCorrect ? Math.max(200, 1000 - seconds * 80) : 0;
-          return { studentName: name, guessedIndex, secondsTaken: seconds, isCorrect, score };
+          return { studentName: st.name, avatar: st.avatar, guessedIndex, secondsTaken: seconds, isCorrect, score };
         }).sort((a, b) => b.score - a.score);
 
         setStudentLeaderboard(submissions);
@@ -447,8 +454,8 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
               {studentLeaderboard.slice(0, 5).map((entry, index) => (
                 <div key={index} style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '0.65rem 1rem', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ fontWeight: 'bold', color: index === 0 ? '#f59e0b' : '#fff' }}>
-                    #{index + 1} {entry.studentName}
+                  <div style={{ fontWeight: 'bold', color: index === 0 ? '#f59e0b' : '#fff', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span>{entry.avatar}</span> #{index + 1} {entry.studentName}
                   </div>
                   <div style={{ fontSize: '0.85rem', color: entry.isCorrect ? '#22c55e' : '#ef4444' }}>
                     {entry.isCorrect ? `${entry.score} pts (${entry.secondsTaken}s)` : 'Wrong'}

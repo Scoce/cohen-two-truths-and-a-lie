@@ -470,10 +470,10 @@ export const query = async (text: string, params: any[] = []) => {
     return { rows: [newGame], rowCount: 1 };
   }
 
-  // SELECT * FROM games WHERE id = $1 AND user_id = $2
+  // SELECT * FROM games WHERE id = $1
   if (queryNormalized.includes('SELECT * FROM games WHERE id =')) {
-    const [id, user_id] = params;
-    const game = mockGames.find((g) => g.id === id && g.user_id === user_id);
+    const [id] = params;
+    const game = mockGames.find((g) => g.id === id);
     return { rows: game ? [game] : [], rowCount: game ? 1 : 0 };
   }
 

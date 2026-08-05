@@ -57,6 +57,9 @@ function StudentJoinContent() {
     setSubmitted(true);
   };
 
+  const AVATARS = ['🐶', '🐱', '🦊', '🐼', '🦁', '🚀', '👑', '⚡', '🎨', '🤖', '👾', '🦄'];
+  const [selectedAvatar, setSelectedAvatar] = useState('🐶');
+
   return (
     <CityBackground>
       <div style={{
@@ -73,7 +76,7 @@ function StudentJoinContent() {
           /* Student Join Form */
           <div style={{
             width: '100%',
-            maxWidth: '420px',
+            maxWidth: '440px',
             background: 'rgba(15, 23, 42, 0.85)',
             backdropFilter: 'blur(16px)',
             border: '1px solid rgba(168, 85, 247, 0.4)',
@@ -138,6 +141,34 @@ function StudentJoinContent() {
                 />
               </div>
 
+              {/* Avatar Selector Grid */}
+              <div>
+                <label style={{ display: 'block', textAlign: 'left', color: '#fff', fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                  Choose Your Avatar
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '0.5rem' }}>
+                  {AVATARS.map((avatar) => (
+                    <button
+                      key={avatar}
+                      type="button"
+                      onClick={() => setSelectedAvatar(avatar)}
+                      style={{
+                        fontSize: '1.5rem',
+                        padding: '0.5rem',
+                        borderRadius: '10px',
+                        border: selectedAvatar === avatar ? '2px solid #a855f7' : '1px solid rgba(255,255,255,0.1)',
+                        background: selectedAvatar === avatar ? 'rgba(168, 85, 247, 0.3)' : 'rgba(0,0,0,0.3)',
+                        cursor: 'pointer',
+                        transform: selectedAvatar === avatar ? 'scale(1.15)' : 'scale(1)',
+                        transition: 'transform 0.15s ease'
+                      }}
+                    >
+                      {avatar}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {modError && (
                 <div style={{ color: '#ef4444', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: '8px', padding: '0.65rem', fontSize: '0.85rem' }}>
                   ⚠️ {modError}
@@ -179,8 +210,8 @@ function StudentJoinContent() {
             textAlign: 'center'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.85rem' }}>
-              <div style={{ fontWeight: 800, color: '#a855f7', fontSize: '1.1rem' }}>
-                👤 {nickname}
+              <div style={{ fontWeight: 800, color: '#a855f7', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span style={{ fontSize: '1.5rem' }}>{selectedAvatar}</span> {nickname}
               </div>
               <div style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', padding: '0.35rem 0.85rem', borderRadius: '20px', fontWeight: 800, fontSize: '0.85rem' }}>
                 ROOM #{roomCode}
