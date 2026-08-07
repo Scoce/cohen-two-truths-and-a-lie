@@ -503,7 +503,7 @@ export default function Dashboard() {
           </div>
 
           {/* Solo Game Controls Toolbar */}
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'rgba(15, 23, 42, 0.65)', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '12px', padding: '0.6rem 1.25rem', backdropFilter: 'blur(8px)' }}>
+          <div className={styles.soloToolbar}>
             <div className={styles.ageSelectorGroup}>
               <span className={styles.ageLabel}>Playing:</span>
               <select
