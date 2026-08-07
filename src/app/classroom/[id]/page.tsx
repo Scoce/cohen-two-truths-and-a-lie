@@ -418,115 +418,153 @@ export default function ClassroomPage({ params }: { params: Promise<{ id: string
           )}
         </div>
 
-        {/* Statements Display Grid */}
+        {/* Main Body Section: Split Grid when in Contest Mode */}
         <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1.25rem',
+          display: 'grid',
+          gridTemplateColumns: classroomMode === 'contest' ? '1fr 340px' : '1fr',
+          gap: '1.5rem',
           marginBottom: '1.5rem',
           flex: 1
         }}>
-          {statements.map((text, idx) => {
-            const isThisLie = idx === game.lie_index;
-            const isSelected = selectedLie === idx;
+          {/* Left Column: Statements Display */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {statements.map((text, idx) => {
+              const isThisLie = idx === game.lie_index;
+              const isSelected = selectedLie === idx;
 
-            let borderColor = 'rgba(255, 255, 255, 0.15)';
-            let bgColor = 'rgba(15, 23, 42, 0.65)';
+              let borderColor = 'rgba(255, 255, 255, 0.15)';
+              let bgColor = 'rgba(15, 23, 42, 0.65)';
 
-            if (revealed) {
-              if (isThisLie) {
-                borderColor = '#ef4444';
-                bgColor = 'rgba(239, 68, 68, 0.2)';
-              } else {
-                borderColor = '#22c55e';
-                bgColor = 'rgba(34, 197, 94, 0.15)';
+              if (revealed) {
+                if (isThisLie) {
+                  borderColor = '#ef4444';
+                  bgColor = 'rgba(239, 68, 68, 0.2)';
+                } else {
+                  borderColor = '#22c55e';
+                  bgColor = 'rgba(34, 197, 94, 0.15)';
+                }
+              } else if (isSelected) {
+                borderColor = '#a855f7';
+                bgColor = 'rgba(168, 85, 247, 0.2)';
               }
-            } else if (isSelected) {
-              borderColor = '#a855f7';
-              bgColor = 'rgba(168, 85, 247, 0.2)';
-            }
 
-            return (
-              <div
-                key={idx}
-                onClick={() => !revealed && setSelectedLie(idx)}
-                style={{
-                  padding: '1.5rem 2rem',
-                  borderRadius: '16px',
-                  background: bgColor,
-                  border: `3px solid ${borderColor}`,
-                  backdropFilter: 'blur(12px)',
-                  cursor: revealed ? 'default' : 'pointer',
-                  transition: 'all 0.2s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '1.5rem'
-                }}
-              >
-                <div style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '50%',
-                  background: isThisLie && revealed ? '#ef4444' : 'rgba(255, 255, 255, 0.1)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1.5rem',
-                  fontWeight: 900,
-                  color: '#fff',
-                  flexShrink: 0
-                }}>
-                  {idx + 1}
-                </div>
-                <div style={{ fontSize: '1.6rem', fontWeight: 600, color: '#fff', lineHeight: 1.4, flex: 1 }}>
-                  {text}
-                </div>
+              return (
+                <div
+                  key={idx}
+                  onClick={() => !revealed && setSelectedLie(idx)}
+                  style={{
+                    padding: '1.5rem 2rem',
+                    borderRadius: '16px',
+                    background: bgColor,
+                    border: `3px solid ${borderColor}`,
+                    backdropFilter: 'blur(12px)',
+                    cursor: revealed ? 'default' : 'pointer',
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '1.5rem'
+                  }}
+                >
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '50%',
+                    background: isThisLie && revealed ? '#ef4444' : 'rgba(255, 255, 255, 0.1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.5rem',
+                    fontWeight: 900,
+                    color: '#fff',
+                    flexShrink: 0
+                  }}>
+                    {idx + 1}
+                  </div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 600, color: '#fff', lineHeight: 1.4, flex: 1 }}>
+                    {text}
+                  </div>
 
-                {revealed && (
-                  <div>
-                    {isThisLie ? (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ef4444', fontWeight: 800, fontSize: '1.25rem' }}>
-                        <XCircle size={28} /> THE LIE!
-                      </span>
-                    ) : (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#22c55e', fontWeight: 800, fontSize: '1.25rem' }}>
-                        <CheckCircle2 size={28} /> TRUE
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Mode B: Live Speed Leaderboard (Surfaced after 10s timer ends) */}
-        {classroomMode === 'contest' && revealed && studentLeaderboard.length > 0 && (
-          <div style={{
-            background: 'rgba(15, 23, 42, 0.85)',
-            border: '1px solid rgba(234, 179, 8, 0.4)',
-            borderRadius: '16px',
-            padding: '1.25rem 1.75rem',
-            marginBottom: '1.5rem',
-            backdropFilter: 'blur(12px)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#f59e0b', fontSize: '1.2rem', fontWeight: 800, marginBottom: '0.75rem' }}>
-              <Award size={24} /> LIVE STUDENT SPEED LEADERBOARD
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
-              {studentLeaderboard.slice(0, 5).map((entry, index) => (
-                <div key={index} style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '0.65rem 1rem', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ fontWeight: 'bold', color: index === 0 ? '#f59e0b' : '#fff', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                    <span>{entry.avatar}</span> #{index + 1} {entry.studentName}
-                  </div>
-                  <div style={{ fontSize: '0.85rem', color: entry.isCorrect ? '#22c55e' : '#ef4444' }}>
-                    {entry.isCorrect ? `${entry.score} pts (${entry.secondsTaken}s)` : 'Wrong'}
-                  </div>
+                  {revealed && (
+                    <div>
+                      {isThisLie ? (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ef4444', fontWeight: 800, fontSize: '1.25rem' }}>
+                          <XCircle size={28} /> THE LIE!
+                        </span>
+                      ) : (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#22c55e', fontWeight: 800, fontSize: '1.25rem' }}>
+                          <CheckCircle2 size={28} /> TRUE
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
-        )}
+
+          {/* Right Column: Live Speed Leaderboard Card (Always visible on right side in Contest mode) */}
+          {classroomMode === 'contest' && (
+            <div style={{
+              background: 'rgba(15, 23, 42, 0.85)',
+              border: '1px solid rgba(245, 158, 11, 0.4)',
+              borderRadius: '20px',
+              padding: '1.5rem',
+              backdropFilter: 'blur(12px)',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 0 30px rgba(245, 158, 11, 0.15)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '0.75rem' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#f59e0b', fontSize: '1.1rem', fontWeight: 800 }}>
+                  <Award size={22} /> Live Leaderboard
+                </span>
+                <span style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', padding: '0.2rem 0.65rem', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 800 }}>
+                  {studentLeaderboard.length} Received
+                </span>
+              </div>
+
+              {studentLeaderboard.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', flex: 1 }}>
+                  {studentLeaderboard.map((entry, index) => (
+                    <div key={index} style={{
+                      background: 'rgba(255, 255, 255, 0.06)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '12px',
+                      padding: '0.75rem 0.85rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      animation: 'fadeIn 0.3s ease'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, color: index === 0 ? '#f59e0b' : '#fff', fontSize: '0.95rem' }}>
+                        <span style={{ fontSize: '1.25rem' }}>{entry.avatar}</span>
+                        <span>#{index + 1} {entry.studentName}</span>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        {revealed ? (
+                          <div style={{ fontWeight: 800, fontSize: '0.85rem', color: entry.isCorrect ? '#22c55e' : '#ef4444' }}>
+                            {entry.isCorrect ? `+${entry.score} pts` : '❌ Incorrect'}
+                          </div>
+                        ) : (
+                          <div style={{ color: '#22c55e', fontSize: '0.8rem', fontWeight: 700 }}>
+                            ⚡ {entry.secondsTaken}s (Locked In)
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, color: 'var(--text-secondary)', textAlign: 'center', padding: '2rem 1rem' }}>
+                  <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📱</div>
+                  <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.4 }}>
+                    Waiting for students to tap 1, 2, or 3 on their phones...
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Hint Box */}
         {hint && (

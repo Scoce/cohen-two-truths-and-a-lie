@@ -83,9 +83,10 @@ function StudentJoinContent() {
   const [selectedAvatar, setSelectedAvatar] = useState('🐶');
   const [roomStatus, setRoomStatus] = useState<'lobby' | 'in_progress'>('lobby');
   const [currentPersona, setCurrentPersona] = useState<string>('');
+  const [currentGameId, setCurrentGameId] = useState<number | null>(null);
   const [connectedClassmates, setConnectedClassmates] = useState<Array<{ nickname: string; avatar: string }>>([]);
 
-  // Poll room status when student has joined to know when teacher starts the game
+  // Poll room status when student has joined to know when teacher starts the game or advances round
   useEffect(() => {
     if (!joined || !roomCode) return;
 
@@ -95,6 +96,14 @@ function StudentJoinContent() {
         if (res.ok) {
           const data = await res.json();
           if (data.room) {
+            // Check if game ID changed (new round started)
+            if (data.room.currentGameId && data.room.currentGameId !== currentGameId) {
+              setCurrentGameId(data.room.currentGameId);
+              setSubmitted(false);
+              setSelectedGuess(null);
+              setJoinStartTime(Date.now());
+            }
+
             if (data.room.status === 'in_progress' && roomStatus === 'lobby') {
               setJoinStartTime(Date.now());
             }
@@ -113,7 +122,7 @@ function StudentJoinContent() {
     }, 1500);
 
     return () => clearInterval(interval);
-  }, [joined, roomCode, roomStatus]);
+  }, [joined, roomCode, roomStatus, currentGameId]);
 
   return (
     <CityBackground>
