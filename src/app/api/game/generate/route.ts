@@ -1,18 +1,35 @@
 import { NextResponse } from 'next/server';
-import { getUserFromRequest } from '@/lib/auth';
+import { getUserFromRequest, signJWT } from '@/lib/auth';
 import { query } from '@/lib/db';
 import { generateTwoTruthsAndALie } from '@/lib/gemini';
 import { checkRateLimit, GAME_RATE_LIMIT } from '@/lib/rateLimit';
 
 export async function POST(req: Request) {
   try {
-    // 1. Authenticate user
-    const sessionUser = await getUserFromRequest(req);
+    // 1. Authenticate user or initialize guest session fallback
+    let sessionUser = await getUserFromRequest(req);
+    let newGuestToken: string | null = null;
+
     if (!sessionUser) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
+      const randomSuffix = Math.floor(100000 + Math.random() * 900000);
+      const guestUsername = `Guest_${randomSuffix}`;
+      const guestRes = await query(
+        `INSERT INTO users (username, password_hash, age) VALUES ($1, $2, $3) RETURNING id, username, age`,
+        [guestUsername, '', 10]
       );
+      const guestUser = guestRes.rows[0];
+      newGuestToken = await signJWT({
+        userId: guestUser.id,
+        username: guestUser.username,
+        isGuest: true,
+        age: guestUser.age,
+      });
+      sessionUser = {
+        userId: guestUser.id,
+        username: guestUser.username,
+        isGuest: true,
+        age: guestUser.age,
+      };
     }
 
     const rateCheck = checkRateLimit(String(sessionUser.userId), GAME_RATE_LIMIT);
@@ -244,7 +261,7 @@ export async function POST(req: Request) {
     const gameId = dbRes.rows[0].id;
 
     // 9. Return gameplay details (do NOT return lie_index)
-    return NextResponse.json({
+    const response = NextResponse.json({
       gameId,
       persona,
       category,
@@ -254,6 +271,16 @@ export async function POST(req: Request) {
       sessionId,
       difficulty
     });
+
+    if (newGuestToken) {
+      const isProd = process.env.NODE_ENV === 'production';
+      response.headers.set(
+        'Set-Cookie',
+        `session=${newGuestToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400;${isProd ? ' Secure;' : ''}`
+      );
+    }
+
+    return response;
   } catch (error) {
     console.error('[game-generate] Error:', error);
     return NextResponse.json(

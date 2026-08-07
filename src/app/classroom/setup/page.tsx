@@ -71,7 +71,8 @@ export default function ClassroomSetupPage() {
       });
 
       if (!res.ok) {
-        throw new Error('Failed to generate classroom round');
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error || `Failed to generate classroom round (${res.status})`);
       }
 
       const data = await res.json();
@@ -96,9 +97,10 @@ export default function ClassroomSetupPage() {
 
       // Route directly to Smartboard view for Round 1
       router.push(`/classroom/${data.gameId}`);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      alert('Error starting classroom session. Please try again.');
+      const msg = err instanceof Error ? err.message : 'Error starting classroom session.';
+      alert(`Unable to start session: ${msg}`);
       setStarting(false);
     }
   };
